@@ -92,7 +92,7 @@ export function PostJobDialog({ trigger, onSuccess }: { trigger: ReactNode; onSu
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={trigger} />
+      <DialogTrigger render={trigger as any} />
       <DialogContent className="sm:max-w-150 border-none shadow-xl bg-white rounded-xl overflow-hidden p-0">
         <DialogHeader className="px-6 py-5 border-b border-gray-100">
           <DialogTitle className="text-xl font-bold text-gray-900">Post a Job</DialogTitle>

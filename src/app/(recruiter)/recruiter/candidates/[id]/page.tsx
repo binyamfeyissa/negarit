@@ -1,6 +1,6 @@
 import { use } from "react";
 
-export default function CandidateDetailPage({ params }: { params: { id: string } }) {
+export default function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   return (
     <div className="max-w-4xl mx-auto space-y-3">

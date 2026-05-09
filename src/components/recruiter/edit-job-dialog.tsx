@@ -105,7 +105,7 @@ export function EditJobDialog({ job, trigger, onSaved }: Props) {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogTrigger render={trigger as any} />
         <DialogContent className="sm:max-w-180 border-none shadow-xl bg-white rounded-xl overflow-hidden p-0">
           <DialogHeader className="px-6 py-5 border-b border-gray-100">
             <DialogTitle className="text-xl font-bold text-gray-900">Edit Job Post</DialogTitle>

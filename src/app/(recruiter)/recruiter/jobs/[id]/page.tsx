@@ -56,7 +56,7 @@ function statusBadge(status: string) {
   );
 }
 
-export default function JobApplicationsPage({ params }: { params: { id: string } }) {
+export default function JobApplicationsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { api } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
@@ -299,11 +299,9 @@ export default function JobApplicationsPage({ params }: { params: { id: string }
             <span className="text-sm font-medium text-gray-900">{selected.size} selected</span>
             <div className="flex items-center gap-2">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="default" disabled={bulkLoading}>
-                    {bulkLoading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                    Move Selected
-                  </Button>
+                <DropdownMenuTrigger render={<Button size="sm" variant="default" disabled={bulkLoading} />}>
+                  {bulkLoading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                  Move Selected
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-white border-gray-100 shadow-lg">
                   {(["REVIEWED", "SHORTLISTED", "INTERVIEW", "OFFERED", "REJECTED"] as AppStatus[]).map((status) => (
