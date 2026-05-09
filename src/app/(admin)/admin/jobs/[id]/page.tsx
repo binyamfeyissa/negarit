@@ -10,7 +10,7 @@ import type { Job } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
 import { EditJobDialog } from "@/components/recruiter/edit-job-dialog";
 
-export default function JobDetailPage({ params }: { params: { id: string } }) {
+export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { api } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
