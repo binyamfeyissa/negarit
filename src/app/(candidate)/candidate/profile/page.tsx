@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { ApplicantProfile, DocType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
+import { fileUrl } from "@/lib/config";
 import { Coins, Upload, ShieldCheck, FileText, ExternalLink, RefreshCw } from "lucide-react";
 
 const DOC_TYPES: { value: DocType; label: string }[] = [
@@ -218,7 +219,7 @@ export default function CandidateProfilePage() {
                 <div>
                   <p className="text-sm font-semibold text-indigo-900">Resume on file</p>
                   <a
-                    href={profile.resume_url.startsWith("http") ? profile.resume_url : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ?? ""}${profile.resume_url}`}
+                    href={fileUrl(profile.resume_url) ?? "#"}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-indigo-600 hover:underline flex items-center gap-1"
@@ -337,7 +338,7 @@ export default function CandidateProfilePage() {
               <ShieldCheck size={16} />
               <div>
                 <p className="font-medium">Document on file: {profile.verification_doc_type ?? "—"}</p>
-                <a href={profile.verification_doc_url} target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline text-xs flex items-center gap-1">
+                <a href={fileUrl(profile.verification_doc_url) ?? "#"} target="_blank" rel="noreferrer" className="text-emerald-600 hover:underline text-xs flex items-center gap-1">
                   View document <ExternalLink size={10} />
                 </a>
               </div>

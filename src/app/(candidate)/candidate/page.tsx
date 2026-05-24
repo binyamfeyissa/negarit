@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { ApplicantProfile, Application } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
+import { fileUrl } from "@/lib/config";
 import { Briefcase, Target, Clock, CheckCircle2, Upload, ArrowUpRight, FileText, Coins, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
@@ -122,11 +123,7 @@ export default function CandidateDashboardPage() {
   }
 
   const completeness = profile?.completeness ?? 0;
-  const resumeUrl = profile?.resume_url
-    ? profile.resume_url.startsWith("http")
-      ? profile.resume_url
-      : `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api/v1", "") ?? ""}${profile.resume_url}`
-    : null;
+  const resumeUrl = fileUrl(profile?.resume_url);
 
   return (
     <div className="relative max-w-7xl mx-auto space-y-8 pb-10">

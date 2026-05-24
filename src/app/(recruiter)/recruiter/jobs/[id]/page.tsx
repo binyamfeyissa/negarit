@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/components/auth/auth-provider";
 import type { Job, AppStatus, InterviewType, McqsResult } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
+import { fileUrl } from "@/lib/config";
 import { ToastContainer, Toast } from "@/components/ui/toast";
 import { EditJobDialog } from "@/components/recruiter/edit-job-dialog";
 
@@ -531,7 +532,7 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-3">Resume</h4>
                       <a
-                        href={a.applicant.resumeUrl}
+                        href={fileUrl(a.applicant.resumeUrl) ?? "#"}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100 rounded-lg font-medium text-sm transition"
