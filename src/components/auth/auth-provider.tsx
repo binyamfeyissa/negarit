@@ -52,80 +52,106 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  // React state — for rendering only
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<LoginResponse["user"] | null>(null);
   const [isReady, setIsReady] = useState(false);
 
+  // Refs — authoritative values read by the http client (never stale)
+  const tokenRef = useRef<string | null>(null);
+  const userRef = useRef<LoginResponse["user"] | null>(null);
   const refreshingRef = useRef<Promise<string | null> | null>(null);
 
-  const setAuth = useCallback((auth: StoredAuth) => {
+  // Single function to update both refs and state + persist
+  function applyAuth(auth: StoredAuth) {
+    tokenRef.current = auth.accessToken;
+    userRef.current = auth.user;
     setAccessToken(auth.accessToken);
     setUser(auth.user);
     writeStored(auth);
-  }, []);
+  }
 
-  const refresh = useCallback(async () => {
-    if (refreshingRef.current) return await refreshingRef.current;
-    refreshingRef.current = (async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
-          method: "POST",
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("refresh failed");
-        const json = (await res.json()) as { accessToken?: string };
-        if (json?.accessToken) {
-          setAuth({ accessToken: json.accessToken, user });
-          return json.accessToken;
-        }
-        setAuth({ accessToken: null, user: null });
-        return null;
-      } catch {
-        setAuth({ accessToken: null, user: null });
-        return null;
-      } finally {
-        refreshingRef.current = null;
-      }
-    })();
-    return await refreshingRef.current;
-  }, [setAuth, user]);
+  const setAuth = useCallback((auth: StoredAuth) => {
+    applyAuth(auth);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // http is created ONCE — it reads from refs so it never goes stale.
+  // This prevents the "stale user in closure" logout bug.
   const http = useMemo(
     () =>
       createHttpClient({
-        getToken: () => accessToken,
-        setToken: (t) => setAuth({ accessToken: t, user }),
-        refresh,
+        getToken: () => tokenRef.current,
+
+        // Called when a refresh gives us a new access token.
+        // Reads userRef (always current) — never captures stale state.
+        setToken: (t) => {
+          tokenRef.current = t;
+          setAccessToken(t);
+          writeStored({ accessToken: t, user: userRef.current });
+        },
+
+        // Deduped refresh: only one in-flight call at a time.
+        refresh: () => {
+          if (refreshingRef.current) return refreshingRef.current;
+          refreshingRef.current = (async () => {
+            try {
+              const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+                method: "POST",
+                credentials: "include",
+              });
+              if (!res.ok) {
+                applyAuth({ accessToken: null, user: null });
+                return null;
+              }
+              const json = (await res.json()) as { accessToken?: string };
+              if (json?.accessToken) {
+                tokenRef.current = json.accessToken;
+                setAccessToken(json.accessToken);
+                writeStored({ accessToken: json.accessToken, user: userRef.current });
+                return json.accessToken;
+              }
+              applyAuth({ accessToken: null, user: null });
+              return null;
+            } catch {
+              applyAuth({ accessToken: null, user: null });
+              return null;
+            } finally {
+              refreshingRef.current = null;
+            }
+          })();
+          return refreshingRef.current;
+        },
       }),
-    [accessToken, refresh, setAuth, user],
+    [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
+  // api is also stable — created once alongside http
   const api = useMemo(() => createApi(http), [http]);
 
   const login = useCallback(
     async (email: string, password: string) => {
       const res = await api.auth.login({ email, password });
-      setAuth({ accessToken: res.accessToken, user: res.user });
+      applyAuth({ accessToken: res.accessToken, user: res.user });
       return res.user;
     },
-    [api, setAuth],
+    [api], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const logout = useCallback(async () => {
     try {
-      if (accessToken) await api.auth.logout();
+      if (tokenRef.current) await api.auth.logout();
     } finally {
-      setAuth({ accessToken: null, user: null });
+      applyAuth({ accessToken: null, user: null });
     }
-  }, [accessToken, api, setAuth]);
+  }, [api]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const registerApplicant = useCallback(
     async (body: { fullName: string; email: string; password: string; phone?: string }) => {
       const res = await api.auth.registerApplicant({ ...body, role: "applicant" });
-      setAuth({ accessToken: res.accessToken, user: res.user });
+      applyAuth({ accessToken: res.accessToken, user: res.user });
       return res.user;
     },
-    [api, setAuth],
+    [api],
   );
 
   const registerRecruiter = useCallback(
@@ -142,18 +168,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [api],
   );
 
-  // Keep state synced if another tab logs in/out
+  // Hydrate from localStorage on mount
   useEffect(() => {
     const initial = readStored();
-    setAccessToken(initial.accessToken);
-    setUser(initial.user);
+    applyAuth(initial);
     setIsReady(true);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Keep state synced when another tab logs in/out
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
       if (e.key !== STORAGE_KEY) return;
       const next = readStored();
+      tokenRef.current = next.accessToken;
+      userRef.current = next.user;
       setAccessToken(next.accessToken);
       setUser(next.user);
     };
@@ -191,4 +219,3 @@ export function roleHome(role: Role) {
   if (role === "RECRUITER") return "/recruiter";
   return "/candidate";
 }
-
