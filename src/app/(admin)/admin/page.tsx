@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Briefcase, FileText, TrendingUp } from "lucide-react";
+import { Users, Briefcase, FileText, TrendingUp, Download } from "lucide-react";
 import { MetricCard } from "@/components/admin/metric-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -15,6 +16,27 @@ export default function AdminDashboardPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function exportReport(format: "csv" | "json") {
+    setExporting(true);
+    try {
+      const buffer = await api.admin.report({ format });
+      const blob = new Blob([buffer as ArrayBuffer], {
+        type: format === "json" ? "application/json" : "text/csv",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `negarit-report.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -39,9 +61,31 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="mb-2">
-        <h1 className="text-2xl font-bold mb-1 border-gray-100">Admin Dashboard</h1>
-        <p className="text-gray-500 text-sm">Live analytics from the backend.</p>
+      <div className="mb-2 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold mb-1 border-gray-100">Admin Dashboard</h1>
+          <p className="text-gray-500 text-sm">Live analytics from the backend.</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportReport("csv")}
+            disabled={exporting}
+            className="flex items-center gap-1 text-xs"
+          >
+            <Download size={14} /> Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportReport("json")}
+            disabled={exporting}
+            className="flex items-center gap-1 text-xs"
+          >
+            <Download size={14} /> Export JSON
+          </Button>
+        </div>
       </div>
 
       {error ? <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3">{error}</div> : null}

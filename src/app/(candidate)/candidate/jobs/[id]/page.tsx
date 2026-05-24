@@ -2,14 +2,13 @@
 
 import { useEffect, useState, use } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth/auth-provider";
-import type { Job } from "@/lib/api/types";
+import type { Job, SkillGapResult, MockInterviewResult } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
-import { Briefcase, MapPin, DollarSign, Calendar, Users, TrendingUp, ArrowLeft } from "lucide-react";
+import { Briefcase, MapPin, DollarSign, Calendar, Users, ArrowLeft, BrainCircuit, MessageSquare, Coins } from "lucide-react";
 import Link from "next/link";
-import { useState as useStateToast } from "react";
 
 function typeClass(type: string) {
   return type === "FULL_TIME"
@@ -23,18 +22,12 @@ function typeClass(type: string) {
 
 function prettyTypeLabel(type?: string) {
   switch (type) {
-    case 'FULL_TIME':
-      return 'Full time';
-    case 'PART_TIME':
-      return 'Part time';
-    case 'REMOTE':
-      return 'Remote';
-    case 'CONTRACT':
-      return 'Contract';
-    case 'INTERN':
-      return 'Intern';
-    default:
-      return type ?? '—';
+    case "FULL_TIME": return "Full time";
+    case "PART_TIME": return "Part time";
+    case "REMOTE": return "Remote";
+    case "CONTRACT": return "Contract";
+    case "INTERN": return "Intern";
+    default: return type ?? "—";
   }
 }
 
@@ -60,6 +53,12 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
   const [applyLoading, setApplyLoading] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
 
+  const [skillGap, setSkillGap] = useState<SkillGapResult | null>(null);
+  const [skillGapLoading, setSkillGapLoading] = useState(false);
+
+  const [mockInterview, setMockInterview] = useState<MockInterviewResult | null>(null);
+  const [mockInterviewLoading, setMockInterviewLoading] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -75,10 +74,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
         if (!cancelled) setLoading(false);
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [id, api]);
 
   async function handleApply() {
@@ -88,11 +84,38 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
       await api.applicant.apply(id, { coverLetter: coverLetter || undefined });
       setSuccess("Application sent successfully!");
       setCoverLetter("");
-      setTimeout(() => setSuccess(null), 3000);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to apply.");
     } finally {
       setApplyLoading(false);
+    }
+  }
+
+  async function handleSkillGap() {
+    setSkillGap(null);
+    setSkillGapLoading(true);
+    setError(null);
+    try {
+      const result = await api.jobs.skillGap(id);
+      setSkillGap(result);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Skill gap analysis failed.");
+    } finally {
+      setSkillGapLoading(false);
+    }
+  }
+
+  async function handleMockInterview() {
+    setMockInterview(null);
+    setMockInterviewLoading(true);
+    setError(null);
+    try {
+      const result = await api.jobs.mockInterview(id);
+      setMockInterview(result);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Mock interview generation failed.");
+    } finally {
+      setMockInterviewLoading(false);
     }
   }
 
@@ -103,8 +126,8 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
           <div className="h-6 w-24 rounded bg-slate-200" />
           <div className="h-10 w-96 rounded bg-slate-200" />
           <div className="grid gap-4 md:grid-cols-3 pt-4">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="h-24 rounded-2xl bg-slate-100" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-24 rounded-2xl bg-slate-100" />
             ))}
           </div>
         </div>
@@ -116,8 +139,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
     return (
       <div className="max-w-4xl mx-auto">
         <Link href="/candidate/jobs" className="inline-flex items-center gap-2 text-indigo-600 hover:underline mb-4">
-          <ArrowLeft size={18} />
-          Back to jobs
+          <ArrowLeft size={18} /> Back to jobs
         </Link>
         <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
           <CardContent className="p-8 text-center">
@@ -133,8 +155,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
       <Link href="/candidate/jobs" className="inline-flex items-center gap-2 text-indigo-600 hover:underline">
-        <ArrowLeft size={18} />
-        Back to jobs
+        <ArrowLeft size={18} /> Back to jobs
       </Link>
 
       <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 text-white shadow-2xl">
@@ -152,42 +173,79 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            {job.location && (
-              <div className="flex items-center gap-2 text-slate-200">
-                <MapPin size={18} />
-                <span>{job.location}</span>
-              </div>
-            )}
-            {salaryLabel && (
-              <div className="flex items-center gap-2 text-slate-200">
-                <DollarSign size={18} />
-                <span>{salaryLabel}</span>
-              </div>
-            )}
-            {job.postedAt && (
-              <div className="flex items-center gap-2 text-slate-200">
-                <Calendar size={18} />
-                <span>Posted {formatDate(job.postedAt)}</span>
-              </div>
-            )}
-            {job.deadline && (
-              <div className="flex items-center gap-2 text-slate-200">
-                <Calendar size={18} />
-                <span>Deadline {formatDate(job.deadline)}</span>
-              </div>
-            )}
-            {job.applicantCount != null && (
-              <div className="flex items-center gap-2 text-slate-200">
-                <Users size={18} />
-                <span>{job.applicantCount} applicants</span>
-              </div>
-            )}
+            {job.location && <div className="flex items-center gap-2 text-slate-200"><MapPin size={18} /><span>{job.location}</span></div>}
+            {salaryLabel && <div className="flex items-center gap-2 text-slate-200"><DollarSign size={18} /><span>{salaryLabel}</span></div>}
+            {job.postedAt && <div className="flex items-center gap-2 text-slate-200"><Calendar size={18} /><span>Posted {formatDate(job.postedAt)}</span></div>}
+            {job.deadline && <div className="flex items-center gap-2 text-slate-200"><Calendar size={18} /><span>Deadline {formatDate(job.deadline)}</span></div>}
+            {job.applicantCount != null && <div className="flex items-center gap-2 text-slate-200"><Users size={18} /><span>{job.applicantCount} applicants</span></div>}
           </div>
         </div>
       </div>
 
       {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
       {success && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div>}
+
+      {/* AI tools bar */}
+      <Card className="rounded-2xl border-indigo-100 bg-indigo-50/50 shadow-none">
+        <CardContent className="p-4 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-indigo-700 text-sm font-semibold mr-2">
+            <BrainCircuit size={18} /> AI Tools
+            <span className="text-xs font-normal text-indigo-500 flex items-center gap-1"><Coins size={12} /> token-gated</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSkillGap}
+            disabled={skillGapLoading}
+            className="border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+          >
+            <BrainCircuit size={14} className="mr-1" />
+            {skillGapLoading ? "Analysing..." : "Skill Gap Analysis"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleMockInterview}
+            disabled={mockInterviewLoading}
+            className="border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+          >
+            <MessageSquare size={14} className="mr-1" />
+            {mockInterviewLoading ? "Generating..." : "Mock Interview"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {skillGap ? (
+        <Card className="rounded-3xl border-indigo-100 shadow-sm bg-white">
+          <CardHeader className="border-b border-indigo-50 pb-4">
+            <CardTitle className="text-base text-indigo-900 flex items-center gap-2">
+              <BrainCircuit size={16} /> Skill Gap Analysis
+              <Badge className="ml-auto bg-indigo-50 text-indigo-700 border-indigo-100">{skillGap.tokensUsed} token{skillGap.tokensUsed !== 1 ? "s" : ""} used</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{skillGap.analysis}</p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {mockInterview ? (
+        <Card className="rounded-3xl border-violet-100 shadow-sm bg-white">
+          <CardHeader className="border-b border-violet-50 pb-4">
+            <CardTitle className="text-base text-violet-900 flex items-center gap-2">
+              <MessageSquare size={16} /> Mock Interview Questions
+              <Badge className="ml-auto bg-violet-50 text-violet-700 border-violet-100">{mockInterview.tokensUsed} token{mockInterview.tokensUsed !== 1 ? "s" : ""} used</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <ol className="space-y-3 list-decimal list-inside">
+              {mockInterview.questions.map((q, i) => (
+                <li key={i} className="text-sm text-slate-700 leading-relaxed">{q}</li>
+              ))}
+            </ol>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
         <div className="space-y-6">
@@ -196,9 +254,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
               <CardTitle className="text-lg text-slate-950">Job Description</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="prose prose-sm max-w-none text-slate-700">
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{job.description || "No description provided."}</p>
-              </div>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{job.description || "No description provided."}</p>
             </CardContent>
           </Card>
 
@@ -207,14 +263,12 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
               <CardTitle className="text-lg text-slate-950">Requirements</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {job.requirements && job.requirements.length > 0 ? (
+              {job.requirements?.length > 0 ? (
                 <ul className="list-disc pl-6 space-y-2 text-sm text-slate-700">
-                  {job.requirements.map((req, index) => (
-                    <li key={index}>{req}</li>
-                  ))}
+                  {job.requirements.map((req, i) => <li key={i}>{req}</li>)}
                 </ul>
               ) : (
-                <p className="text-sm text-slate-500">No specific requirements listed.</p>
+                <p className="text-sm text-slate-500">No requirements listed.</p>
               )}
             </CardContent>
           </Card>
@@ -224,12 +278,10 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
               <CardTitle className="text-lg text-slate-950">Required Skills</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {job.requiredSkills && job.requiredSkills.length > 0 ? (
+              {job.requiredSkills?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {job.requiredSkills.map((skill, index) => (
-                    <Badge key={index} className="border-indigo-100 bg-indigo-50 text-indigo-700 hover:bg-indigo-50">
-                      {skill}
-                    </Badge>
+                  {job.requiredSkills.map((skill, i) => (
+                    <Badge key={i} className="border-indigo-100 bg-indigo-50 text-indigo-700 hover:bg-indigo-50">{skill}</Badge>
                   ))}
                 </div>
               ) : (
@@ -254,18 +306,10 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
                   className="w-full mt-2 border border-slate-200 rounded-lg p-3 text-sm bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-32"
                 />
               </div>
-
-              <Button
-                onClick={handleApply}
-                disabled={applyLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-10"
-              >
+              <Button onClick={handleApply} disabled={applyLoading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-10">
                 {applyLoading ? "Applying..." : "Submit Application"}
               </Button>
-
-              <p className="text-xs text-slate-500 text-center">
-                By applying, you agree to share your profile with the recruiter.
-              </p>
+              <p className="text-xs text-slate-500 text-center">By applying, you agree to share your profile with the recruiter.</p>
             </CardContent>
           </Card>
 

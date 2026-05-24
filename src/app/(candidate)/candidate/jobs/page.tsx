@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { Job } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
-import { Search, MapPin, DollarSign, Briefcase } from "lucide-react";
+import { Search, MapPin, DollarSign, Briefcase, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 function typeClass(type: string) {
@@ -48,6 +48,7 @@ function formatSalary(min?: number | null, max?: number | null) {
 export default function CandidateJobsPage() {
   const { api } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [recommended, setRecommended] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,9 +59,13 @@ export default function CandidateJobsPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await api.jobs.list({ page: 1, limit: 100 });
+        const [res, rec] = await Promise.all([
+          api.jobs.list({ page: 1, limit: 100 }),
+          api.jobs.recommended({ limit: 5 }).catch(() => ({ data: [] })),
+        ]);
         if (cancelled) return;
         setJobs(res.data ?? []);
+        setRecommended(rec.data ?? []);
         setError(null);
       } catch (e) {
         if (cancelled) return;
@@ -102,6 +107,46 @@ export default function CandidateJobsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-10">
+      {recommended.length > 0 ? (
+        <Card className="rounded-3xl border-indigo-100 shadow-sm bg-indigo-50/40">
+          <CardHeader className="border-b border-indigo-100 pb-4">
+            <CardTitle className="text-base text-indigo-900 flex items-center gap-2">
+              <Sparkles size={16} className="text-indigo-500" /> Recommended for You
+            </CardTitle>
+            <CardDescription className="text-indigo-600">AI-matched jobs based on your profile</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 space-y-2">
+            {recommended.map((job) => {
+              const salaryLabel = formatSalary(job.salaryMin, job.salaryMax);
+              return (
+                <Link
+                  key={job.id}
+                  href={`/candidate/jobs/${job.id}`}
+                  className="block rounded-2xl border border-indigo-100 bg-white p-4 transition hover:border-indigo-300 hover:shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-950">{job.title}</p>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                        <Briefcase size={12} /><span>{job.recruiter?.companyName ?? "—"}</span>
+                        <MapPin size={12} /><span>{job.location ?? "—"}</span>
+                        {salaryLabel && <><DollarSign size={12} /><span>{salaryLabel}</span></>}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge className={typeClass(job.type)}>{prettyTypeLabel(job.type)}</Badge>
+                      {job.matchScore != null && (
+                        <span className="text-xs text-indigo-600 font-semibold">{job.matchScore}% match</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
         <CardHeader className="border-b border-slate-100 pb-4">
           <CardTitle className="text-lg text-slate-950">Available Jobs</CardTitle>

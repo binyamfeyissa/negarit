@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Home, Users, Briefcase, Building, Settings } from 'lucide-react';
+import { Home, Users, Briefcase, Building, Settings, ScrollText } from 'lucide-react';
 
 export function AdminSidebarLinks() {
   return (
@@ -28,6 +28,10 @@ export function AdminSidebarLinks() {
           <Link href="/admin/companies" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-2 py-2 rounded-md font-medium text-sm">
             <Building size={18} />
             <span>Companies</span>
+          </Link>
+          <Link href="/admin/logs" className="flex items-center space-x-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-2 py-2 rounded-md font-medium text-sm">
+            <ScrollText size={18} />
+            <span>Audit Logs</span>
           </Link>
         </nav>
       </div>

@@ -1,7 +1,31 @@
 export type Role = "APPLICANT" | "RECRUITER" | "ADMIN";
 
+export type UserStatus = "ACTIVE" | "PENDING" | "SUSPENDED";
+
+export type JobStatus = "DRAFT" | "OPEN" | "CLOSED";
+
+export type InterviewType = "VIDEO" | "IN_PERSON" | "PHONE";
+
+export type DocType = "DEGREE" | "CERTIFICATION" | "OTHER";
+
+export type TokenType =
+  | "CREDIT_SIGNUP"
+  | "CREDIT_PURCHASE"
+  | "DEBIT_MOCK_INTERVIEW"
+  | "DEBIT_SKILL_GAP"
+  | "DEBIT_JOB_POST";
+
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED";
+
+export type ApiErrorDetail = {
+  path?: (string | number)[];
+  message?: string;
+  code?: string;
+  [key: string]: unknown;
+};
+
 export type ApiErrorPayload =
-  | { error: { code?: string; message?: string } }
+  | { error: { code?: string; message?: string; details?: ApiErrorDetail[] } }
   | { message?: string };
 
 export class ApiError extends Error {
@@ -37,6 +61,9 @@ export type ApplicantProfile = {
   resume_score?: number;
   preferred_roles?: string[];
   is_verified: boolean;
+  tokens?: number;
+  verification_doc_url?: string | null;
+  verification_doc_type?: string | null;
   created_at: string;
   completeness: number;
 };
@@ -49,7 +76,8 @@ export type RecruiterProfile = {
   employeeCount: number;
   website?: string | null;
   email: string;
-  status: "ACTIVE" | "PENDING" | "SUSPENDED";
+  status: UserStatus;
+  tokens?: number;
   activeJobs: number;
   totalHires: number;
   createdAt: string;
@@ -74,6 +102,7 @@ export type Job = {
   requiredSkills: string[];
   location: string;
   type: JobType;
+  status?: JobStatus;
   category?: string | null;
   salaryMin?: number | null;
   salaryMax?: number | null;
@@ -109,6 +138,76 @@ export type AnalyticsOverview = {
   totalApplications: number;
   hireRate: number;
   avgMatchScore: number;
-  dailySignups: { date: string; count: number }[];
+  dailySignups?: { date: string; count: number }[];
 };
 
+export type VerificationDocResult = {
+  verificationDocUrl: string;
+  docType: string;
+  fileName: string;
+};
+
+export type TokenBalance = {
+  tokens: number;
+  history: Array<{
+    type: TokenType;
+    amount: number;
+    description?: string;
+    createdAt: string;
+  }>;
+};
+
+export type SkillGapResult = {
+  jobId: string;
+  jobTitle: string;
+  analysis: string;
+  tokensUsed: number;
+};
+
+export type MockInterviewResult = {
+  jobId: string;
+  jobTitle: string;
+  questions: string[];
+  tokensUsed: number;
+};
+
+export type McqsResult = {
+  jobId: string;
+  jobTitle: string;
+  questions: Array<{
+    question: string;
+    options?: string[];
+    answer?: string;
+  }>;
+};
+
+export type TokenPackage = {
+  id: string;
+  name: string;
+  tokens: number;
+  priceEtb: number;
+  description?: string;
+};
+
+export type PaymentInitResult = {
+  paymentId: string;
+  txRef: string;
+  checkoutUrl: string;
+  amount: number;
+  tokensGranted: number;
+};
+
+export type PaymentVerifyResult = {
+  status: PaymentStatus | string;
+  tokensGranted: number;
+  amount: number;
+};
+
+export type PaymentHistoryItem = {
+  id: string;
+  txRef: string;
+  status: PaymentStatus;
+  amount: number;
+  tokensGranted: number;
+  createdAt: string;
+};

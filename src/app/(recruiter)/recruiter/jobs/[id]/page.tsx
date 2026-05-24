@@ -4,11 +4,11 @@ import { useEffect, useState, use } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Search, ChevronDown, ExternalLink, Loader } from "lucide-react";
+import { MoreHorizontal, Search, ChevronDown, ExternalLink, Loader, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/auth/auth-provider";
-import type { Job, AppStatus } from "@/lib/api/types";
+import type { Job, AppStatus, InterviewType, McqsResult } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
 import { ToastContainer, Toast } from "@/components/ui/toast";
 import { EditJobDialog } from "@/components/recruiter/edit-job-dialog";
@@ -68,11 +68,13 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [interviewModal, setInterviewModal] = useState<{ appId: string; name: string } | null>(null);
-  const [interviewForm, setInterviewForm] = useState({ type: "VIDEO", scheduledAt: "", location: "" });
+  const [interviewForm, setInterviewForm] = useState<{ type: InterviewType; scheduledTime: string; meetingLink: string; location: string }>({ type: "VIDEO", scheduledTime: "", meetingLink: "", location: "" });
   const [feedbackModal, setFeedbackModal] = useState<{ interviewId: string; appId: string } | null>(null);
   const [feedbackForm, setFeedbackForm] = useState({ score: 3, feedback: "" });
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [mcqs, setMcqs] = useState<McqsResult | null>(null);
+  const [mcqsLoading, setMcqsLoading] = useState(false);
   const [noteModal, setNoteModal] = useState<{ type: "move" | "bulk"; status: AppStatus; appIds: string[] } | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
@@ -162,13 +164,14 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
       setLoading(true);
       await api.recruiter.scheduleInterview(interviewModal.appId, {
         type: interviewForm.type,
-        scheduledAt: interviewForm.scheduledAt,
-        location: interviewForm.location,
+        scheduledTime: interviewForm.scheduledTime,
+        meetingLink: interviewForm.meetingLink || undefined,
+        location: interviewForm.location || undefined,
       });
       const list = await api.recruiter.candidatesForJob(id, { page: 1, limit: 50 });
       setApps((list.data ?? []) as ApplicationDetail[]);
       setInterviewModal(null);
-      setInterviewForm({ type: "VIDEO", scheduledAt: "", location: "" });
+      setInterviewForm({ type: "VIDEO", scheduledTime: "", meetingLink: "", location: "" });
       addToast("Interview scheduled successfully", "success");
       setError(null);
     } catch (e) {
@@ -200,6 +203,20 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
       addToast(errorMsg, "error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function generateMcqs() {
+    setMcqs(null);
+    setMcqsLoading(true);
+    try {
+      const result = await api.jobs.mcqs(id);
+      setMcqs(result);
+      addToast("MCQs generated", "success");
+    } catch (e) {
+      addToast(e instanceof ApiError ? e.message : "Failed to generate MCQs.", "error");
+    } finally {
+      setMcqsLoading(false);
     }
   }
 
@@ -255,6 +272,47 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
       </Card>
 
       {error ? <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3">{error}</div> : null}
+
+      <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void generateMcqs()}
+          disabled={mcqsLoading}
+          className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+        >
+          <ClipboardList size={14} />
+          {mcqsLoading ? "Generating…" : "Generate Screening MCQs"}
+        </Button>
+      </div>
+
+      {mcqs ? (
+        <Card className="border-indigo-100 rounded-2xl shadow-sm bg-white">
+          <div className="p-4 border-b border-indigo-50 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2"><ClipboardList size={14} /> Screening MCQs for {mcqs.jobTitle}</h3>
+            <button onClick={() => setMcqs(null)} className="text-xs text-slate-400 hover:text-slate-700">Dismiss</button>
+          </div>
+          <div className="p-4 space-y-4">
+            {mcqs.questions.map((q, i) => (
+              <div key={i} className="rounded-xl border border-indigo-50 bg-indigo-50/40 p-4">
+                <p className="text-sm font-semibold text-slate-900 mb-2">{i + 1}. {q.question}</p>
+                {q.options && q.options.length > 0 ? (
+                  <ul className="space-y-1">
+                    {q.options.map((opt, j) => (
+                      <li key={j} className={`text-xs px-3 py-1.5 rounded-lg ${q.answer === opt ? "bg-emerald-50 text-emerald-800 font-semibold border border-emerald-100" : "text-slate-600"}`}>
+                        {opt}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {q.answer && !q.options?.length ? (
+                  <p className="text-xs text-emerald-700 mt-2 font-medium">Answer: {q.answer}</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
 
       <Card className="border-gray-100 shadow-sm rounded-xl overflow-hidden">
         <div className="p-4 border-b border-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -527,7 +585,7 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
                   <label className="text-sm font-medium text-gray-700 mb-1 block">Interview Type</label>
                   <select
                     value={interviewForm.type}
-                    onChange={(e) => setInterviewForm({ ...interviewForm, type: e.target.value })}
+                    onChange={(e) => setInterviewForm({ ...interviewForm, type: e.target.value as InterviewType })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
                   >
                     <option value="VIDEO">Video</option>
@@ -540,17 +598,28 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
                   <label className="text-sm font-medium text-gray-700 mb-1 block">Scheduled Date & Time</label>
                   <input
                     type="datetime-local"
-                    value={interviewForm.scheduledAt}
-                    onChange={(e) => setInterviewForm({ ...interviewForm, scheduledAt: e.target.value })}
+                    value={interviewForm.scheduledTime}
+                    onChange={(e) => setInterviewForm({ ...interviewForm, scheduledTime: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Location / Meeting Link</label>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Meeting Link (optional)</label>
                   <input
                     type="text"
-                    placeholder="Google Meet link, office address, or phone number"
+                    placeholder="https://meet.google.com/..."
+                    value={interviewForm.meetingLink}
+                    onChange={(e) => setInterviewForm({ ...interviewForm, meetingLink: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Location (optional)</label>
+                  <input
+                    type="text"
+                    placeholder="Office address or phone number"
                     value={interviewForm.location}
                     onChange={(e) => setInterviewForm({ ...interviewForm, location: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
@@ -562,7 +631,7 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
                 <Button variant="outline" onClick={() => setInterviewModal(null)} disabled={loading}>
                   Cancel
                 </Button>
-                <Button onClick={() => void scheduleInterview()} disabled={loading || !interviewForm.scheduledAt}>
+                <Button onClick={() => void scheduleInterview()} disabled={loading || !interviewForm.scheduledTime}>
                   {loading && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                   Schedule
                 </Button>

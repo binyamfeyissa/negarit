@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, User, Settings, HelpCircle, BookOpen } from 'lucide-react';
+import { Home, Briefcase, User, Settings, HelpCircle, Coins } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 function classNames(...parts: Array<string | false | null | undefined>) {
@@ -16,6 +16,7 @@ export function CandidateSidebarLinks() {
     '/candidate',
     '/candidate/jobs',
     '/candidate/profile',
+    '/candidate/tokens',
     '/candidate/settings',
     '/candidate/help',
   ];
@@ -60,6 +61,7 @@ export function CandidateSidebarLinks() {
             <LinkItem href="/candidate" icon={<Home size={18} />}>Dashboard</LinkItem>
             <LinkItem href="/candidate/jobs" icon={<Briefcase size={18} />}>Jobs</LinkItem>
             <LinkItem href="/candidate/profile" icon={<User size={18} />}>Profile</LinkItem>
+            <LinkItem href="/candidate/tokens" icon={<Coins size={18} />}>Tokens</LinkItem>
           </nav>
         </div>
 

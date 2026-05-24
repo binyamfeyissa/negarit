@@ -2,11 +2,24 @@ import type {
   AnalyticsOverview,
   ApplicantProfile,
   Application,
+  AppStatus,
+  DocType,
+  InterviewType,
   Job,
   LoginResponse,
+  McqsResult,
+  MockInterviewResult,
   Paginated,
-  RefreshResponse,
+  PaymentHistoryItem,
+  PaymentInitResult,
+  PaymentVerifyResult,
   RecruiterProfile,
+  RefreshResponse,
+  SkillGapResult,
+  TokenBalance,
+  TokenPackage,
+  UserStatus,
+  VerificationDocResult,
 } from "./types";
 
 import type { createHttpClient } from "./http";
@@ -24,6 +37,7 @@ export type JobUpdateBody = {
   salaryMin?: number;
   salaryMax?: number;
   deadline?: string;
+  status?: string;
 };
 
 export function createApi(http: Http) {
@@ -45,15 +59,28 @@ export function createApi(http: Http) {
     },
     applicant: {
       me: () => http.request<ApplicantProfile>("/applicants/me"),
-      updateMe: (body: { phone?: string; website?: string; experienceYears?: number; preferredRoles?: string[] }) =>
-        http.request<ApplicantProfile>("/applicants/me", { method: "PATCH", body: JSON.stringify(body) }),
+      updateMe: (body: {
+        fullName?: string;
+        phone?: string;
+        website?: string;
+        experienceYears?: number;
+        preferredRoles?: string[];
+        skills?: string[];
+      }) => http.request<ApplicantProfile>("/applicants/me", { method: "PATCH", body: JSON.stringify(body) }),
       uploadResume: (file: File) => {
         const form = new FormData();
         form.append("file", file);
         return http.request<{ resumeUrl: string; parseStatus: string }>("/applicants/me/resume", { method: "POST", body: form });
       },
       resumeStatus: () =>
-        http.request<{ parseStatus: string; parsedSkills: string[]; resumeScore: number }>("/applicants/me/resume/status"),
+        http.request<{ status: string; parsedSkills: string[]; resumeScore: number; feedback?: string }>("/applicants/me/resume/status"),
+      uploadVerificationDoc: (file: File, docType?: DocType) => {
+        const form = new FormData();
+        form.append("verificationDoc", file);
+        if (docType) form.append("docType", docType);
+        return http.request<VerificationDocResult>("/applicants/me/verification-doc", { method: "POST", body: form });
+      },
+      tokenBalance: () => http.request<TokenBalance>("/applicants/me/tokens"),
       myApplications: (params?: { page?: number; limit?: number }) => {
         const q = new URLSearchParams();
         if (params?.page) q.set("page", String(params.page));
@@ -65,37 +92,40 @@ export function createApi(http: Http) {
     },
     recruiter: {
       me: () => http.request<RecruiterProfile>("/recruiters/me"),
-      updateMe: (body: { industry?: string; employeeCount?: number; website?: string }) =>
+      updateMe: (body: { companyName?: string; industry?: string; employeeCount?: number; website?: string }) =>
         http.request<RecruiterProfile>("/recruiters/me", { method: "PATCH", body: JSON.stringify(body) }),
-      myJobs: (params?: { page?: number; limit?: number }) => {
-        const q = new URLSearchParams();
-        if (params?.page) q.set("page", String(params.page));
-        if (params?.limit) q.set("limit", String(params.limit));
-        return http.request<Paginated<Job>>(`/recruiters/me/jobs${q.toString() ? `?${q}` : ""}`);
-      },
-      candidatesForJob: (jobId: string, params?: { status?: string; page?: number; limit?: number }) => {
+      myJobs: (params?: { status?: string; page?: number; limit?: number }) => {
         const q = new URLSearchParams();
         if (params?.status) q.set("status", params.status);
         if (params?.page) q.set("page", String(params.page));
         if (params?.limit) q.set("limit", String(params.limit));
+        return http.request<Paginated<Job>>(`/recruiters/me/jobs${q.toString() ? `?${q}` : ""}`);
+      },
+      candidatesForJob: (jobId: string, params?: { status?: string; sortBy?: string; page?: number; limit?: number }) => {
+        const q = new URLSearchParams();
+        if (params?.status) q.set("status", params.status);
+        if (params?.sortBy) q.set("sortBy", params.sortBy);
+        if (params?.page) q.set("page", String(params.page));
+        if (params?.limit) q.set("limit", String(params.limit));
         return http.request<Paginated<Application>>(`/jobs/${jobId}/applications${q.toString() ? `?${q}` : ""}`);
       },
-      moveStage: (applicationId: string, body: { status: string; note?: string }) =>
+      moveStage: (applicationId: string, body: { status: AppStatus; note?: string }) =>
         http.request<Application>(`/applications/${applicationId}/status`, { method: "PATCH", body: JSON.stringify(body) }),
-      bulkMove: (jobId: string, body: { applicationIds: string[]; status: string; note?: string }) =>
+      bulkMove: (jobId: string, body: { applicationIds: string[]; status: AppStatus; note?: string }) =>
         http.request<{ updated: number }>(`/jobs/${jobId}/applications/bulk-status`, { method: "PATCH", body: JSON.stringify(body) }),
-      scheduleInterview: (applicationId: string, body: { type: string; scheduledAt: string; location?: string }) =>
+      scheduleInterview: (applicationId: string, body: { type: InterviewType; scheduledTime: string; meetingLink?: string; location?: string }) =>
         http.request<unknown>(`/applications/${applicationId}/interview`, { method: "POST", body: JSON.stringify(body) }),
-      updateInterview: (interviewId: string, body: { score?: number; feedback?: string }) =>
+      updateInterview: (interviewId: string, body: { scheduledTime?: string; score?: number; feedback?: string; status?: string }) =>
         http.request<unknown>(`/interviews/${interviewId}`, { method: "PATCH", body: JSON.stringify(body) }),
     },
     jobs: {
-      list: (params?: { q?: string; type?: string; location?: string; category?: string; page?: number; limit?: number }) => {
+      list: (params?: { q?: string; type?: string; location?: string; category?: string; salaryMin?: number; page?: number; limit?: number }) => {
         const q = new URLSearchParams();
         if (params?.q) q.set("q", params.q);
         if (params?.type) q.set("type", params.type);
         if (params?.location) q.set("location", params.location);
         if (params?.category) q.set("category", params.category);
+        if (params?.salaryMin != null) q.set("salaryMin", String(params.salaryMin));
         if (params?.page) q.set("page", String(params.page));
         if (params?.limit) q.set("limit", String(params.limit));
         return http.request<Paginated<Job>>(`/jobs${q.toString() ? `?${q}` : ""}`, { auth: false });
@@ -112,10 +142,30 @@ export function createApi(http: Http) {
         salaryMin?: number;
         salaryMax?: number;
         deadline?: string;
+        status?: string;
       }) => http.request<Job>("/jobs", { method: "POST", body: JSON.stringify(body) }),
       update: (jobId: string, body: JobUpdateBody) =>
         http.request<Job>(`/jobs/${jobId}`, { method: "PATCH", body: JSON.stringify(body) }),
       remove: (jobId: string) => http.request<void>(`/jobs/${jobId}`, { method: "DELETE" }),
+      recommended: (params?: { limit?: number }) => {
+        const q = new URLSearchParams();
+        if (params?.limit) q.set("limit", String(params.limit));
+        return http.request<{ data: Job[] }>(`/jobs/recommended${q.toString() ? `?${q}` : ""}`);
+      },
+      skillGap: (jobId: string) =>
+        http.request<SkillGapResult>(`/jobs/${jobId}/skill-gap`, { method: "POST" }),
+      mockInterview: (jobId: string) =>
+        http.request<MockInterviewResult>(`/jobs/${jobId}/mock-interview`, { method: "POST" }),
+      mcqs: (jobId: string, body?: { numQuestions?: number }) =>
+        http.request<McqsResult>(`/jobs/${jobId}/mcqs`, { method: "POST", body: JSON.stringify(body ?? {}) }),
+    },
+    payments: {
+      packages: () => http.request<{ packages: TokenPackage[]; note?: string }>("/payments/packages", { auth: false }),
+      initiate: (body: { packageId?: string; customEtb?: number }) =>
+        http.request<PaymentInitResult>("/payments/initiate", { method: "POST", body: JSON.stringify(body) }),
+      verify: (txRef: string) =>
+        http.request<PaymentVerifyResult>(`/payments/verify/${txRef}`, { auth: false }),
+      history: () => http.request<{ payments: PaymentHistoryItem[] }>("/payments/history"),
     },
     admin: {
       analyticsOverview: () => http.request<AnalyticsOverview>("/admin/analytics/overview"),
@@ -128,10 +178,10 @@ export function createApi(http: Http) {
         if (params?.limit) q.set("limit", String(params.limit));
         return http.request<Paginated<Record<string, unknown>>>(`/admin/users${q.toString() ? `?${q}` : ""}`);
       },
-      updateUserStatus: (userId: string, body: { status: string; note?: string }) =>
+      updateUserStatus: (userId: string, body: { status: UserStatus; note?: string }) =>
         http.request<{ userId: string; status: string }>(`/admin/users/${userId}/status`, { method: "PATCH", body: JSON.stringify(body) }),
       pendingRecruiters: () => http.request<{ data: RecruiterProfile[] }>("/admin/recruiters/pending"),
-      reviewRecruiter: (userId: string, body: { action: "approve" | "reject"; note?: string }) =>
+      reviewRecruiter: (userId: string, body: { decision: "approve" | "reject"; note?: string }) =>
         http.request<unknown>(`/admin/recruiters/${userId}/review`, { method: "PATCH", body: JSON.stringify(body) }),
       logs: (params?: { userId?: string; action?: string; from?: string; to?: string; page?: number; limit?: number }) => {
         const q = new URLSearchParams();
@@ -155,4 +205,3 @@ export function createApi(http: Http) {
     },
   };
 }
-
