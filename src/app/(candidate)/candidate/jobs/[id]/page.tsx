@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth/auth-provider";
-import type { Job, SkillGapResult, MockInterviewResult } from "@/lib/api/types";
+import type { Job, SkillGapResult, SkillGapAnalysis, MockInterviewResult } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
-import { Briefcase, MapPin, DollarSign, Calendar, Users, ArrowLeft, BrainCircuit, MessageSquare, Coins } from "lucide-react";
+import { Briefcase, MapPin, DollarSign, Calendar, Users, ArrowLeft, BrainCircuit, MessageSquare, Coins, CheckCircle2, XCircle, AlertTriangle, Lightbulb } from "lucide-react";
 import Link from "next/link";
 
 function typeClass(type: string) {
@@ -41,6 +41,82 @@ function formatSalary(min?: number | null, max?: number | null) {
   if (min != null && max != null) return `${min.toLocaleString()} - ${max.toLocaleString()}`;
   if (min != null) return `${min.toLocaleString()}+`;
   return `${max?.toLocaleString()}`;
+}
+
+function SkillGapSection({ title, items, icon, itemClass }: {
+  title: string;
+  items: string[];
+  icon: React.ReactNode;
+  itemClass: string;
+}) {
+  if (!items?.length) return null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        {icon}
+        <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
+        <span className="text-xs text-slate-400 ml-auto">{items.length}</span>
+      </div>
+      <ul className="space-y-1.5">
+        {items.map((item, i) => (
+          <li key={i} className={`text-sm leading-relaxed rounded-lg px-3 py-2 ${itemClass}`}>
+            {item.replace(/\*\*/g, "")}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SkillGapCard({ result }: { result: SkillGapResult }) {
+  const analysis = result.analysis;
+  const isStructured = typeof analysis === "object" && analysis !== null;
+  const structured = isStructured ? (analysis as SkillGapAnalysis) : null;
+
+  return (
+    <Card className="rounded-3xl border-indigo-100 shadow-sm bg-white">
+      <CardHeader className="border-b border-indigo-50 pb-4">
+        <CardTitle className="text-base text-indigo-900 flex items-center gap-2">
+          <BrainCircuit size={16} /> Skill Gap Analysis — {result.jobTitle}
+          <Badge className="ml-auto bg-indigo-50 text-indigo-700 border-indigo-100">
+            {result.tokensUsed} token{result.tokensUsed !== 1 ? "s" : ""} used
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6 space-y-5">
+        {structured ? (
+          <>
+            <SkillGapSection
+              title="Matching Skills"
+              items={structured.matching_skills ?? []}
+              icon={<CheckCircle2 size={15} className="text-emerald-600" />}
+              itemClass="bg-emerald-50 text-emerald-800 border border-emerald-100"
+            />
+            <SkillGapSection
+              title="Missing Skills"
+              items={structured.missing_skills ?? []}
+              icon={<XCircle size={15} className="text-rose-500" />}
+              itemClass="bg-rose-50 text-rose-800 border border-rose-100"
+            />
+            <SkillGapSection
+              title="Weak Areas"
+              items={structured.weak_areas ?? []}
+              icon={<AlertTriangle size={15} className="text-amber-500" />}
+              itemClass="bg-amber-50 text-amber-800 border border-amber-100"
+            />
+            <SkillGapSection
+              title="Recommendations"
+              items={structured.recommendations ?? []}
+              icon={<Lightbulb size={15} className="text-indigo-500" />}
+              itemClass="bg-indigo-50 text-indigo-800 border border-indigo-100"
+            />
+          </>
+        ) : (
+          <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{String(analysis)}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function CandidateJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -215,19 +291,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
         </CardContent>
       </Card>
 
-      {skillGap ? (
-        <Card className="rounded-3xl border-indigo-100 shadow-sm bg-white">
-          <CardHeader className="border-b border-indigo-50 pb-4">
-            <CardTitle className="text-base text-indigo-900 flex items-center gap-2">
-              <BrainCircuit size={16} /> Skill Gap Analysis
-              <Badge className="ml-auto bg-indigo-50 text-indigo-700 border-indigo-100">{skillGap.tokensUsed} token{skillGap.tokensUsed !== 1 ? "s" : ""} used</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{skillGap.analysis}</p>
-          </CardContent>
-        </Card>
-      ) : null}
+      {skillGap ? <SkillGapCard result={skillGap} /> : null}
 
       {mockInterview ? (
         <Card className="rounded-3xl border-violet-100 shadow-sm bg-white">

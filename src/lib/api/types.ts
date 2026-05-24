@@ -157,10 +157,17 @@ export type TokenBalance = {
   }>;
 };
 
+export type SkillGapAnalysis = {
+  matching_skills?: string[];
+  missing_skills?: string[];
+  weak_areas?: string[];
+  recommendations?: string[];
+};
+
 export type SkillGapResult = {
   jobId: string;
   jobTitle: string;
-  analysis: string;
+  analysis: SkillGapAnalysis | string;
   tokensUsed: number;
 };
 
