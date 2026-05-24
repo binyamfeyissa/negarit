@@ -1,71 +1,197 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState, useMemo } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
+import type { Job, Application } from "@/lib/api/types";
+import { ApiError } from "@/lib/api/types";
+import { Search, MapPin, DollarSign, Briefcase, Clock, Users, X } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/components/auth/auth-provider";
-import type { Job } from "@/lib/api/types";
-import { ApiError } from "@/lib/api/types";
-import { Search, MapPin, DollarSign, Briefcase, Sparkles } from "lucide-react";
-import Link from "next/link";
 
-function typeClass(type: string) {
-  return type === "FULL_TIME"
-    ? "bg-indigo-50 text-indigo-700 border-indigo-100"
-    : type === "REMOTE"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-      : type === "CONTRACT"
-        ? "bg-amber-50 text-amber-700 border-amber-100"
-        : "bg-slate-50 text-slate-700 border-slate-100";
-}
+// ── helpers ──────────────────────────────────────────────────────────────────
 
-function prettyTypeLabel(type?: string) {
-  switch (type) {
-    case 'FULL_TIME':
-      return 'Full time';
-    case 'PART_TIME':
-      return 'Part time';
-    case 'REMOTE':
-      return 'Remote';
-    case 'CONTRACT':
-      return 'Contract';
-    case 'INTERN':
-      return 'Intern';
-    default:
-      return type ?? '—';
-  }
+function timeAgo(dateStr?: string | null) {
+  if (!dateStr) return null;
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const h = Math.floor(diff / 3_600_000);
+  if (h < 1) return "Just now";
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d} day${d !== 1 ? "s" : ""} ago`;
+  return `${Math.floor(d / 7)}w ago`;
 }
 
 function formatSalary(min?: number | null, max?: number | null) {
-  if (min == null && max == null) return null;
-  if (min != null && max != null) return `${min.toLocaleString()} - ${max.toLocaleString()}`;
-  if (min != null) return `${min.toLocaleString()}+`;
-  return `${max?.toLocaleString()}`;
+  const fmt = (n: number) => n >= 1000 ? `${Math.round(n / 1000)}K` : String(n);
+  if (min != null && max != null) return `${fmt(min)} – ${fmt(max)}`;
+  if (min != null) return `${fmt(min)}+`;
+  if (max != null) return `up to ${fmt(max)}`;
+  return null;
 }
+
+const TYPE_LABELS: Record<string, string> = {
+  FULL_TIME: "Full-time",
+  PART_TIME: "Part-time",
+  REMOTE: "Remote",
+  CONTRACT: "Contract",
+  INTERN: "Internship",
+};
+
+const TYPE_FILTERS = Object.keys(TYPE_LABELS) as (keyof typeof TYPE_LABELS)[];
+
+function matchLabel(score: number) {
+  if (score >= 90) return "STRONG MATCH";
+  if (score >= 70) return "GOOD MATCH";
+  if (score >= 50) return "FAIR MATCH";
+  return "LOW MATCH";
+}
+
+function matchColor(score: number) {
+  if (score >= 90) return "#10b981";
+  if (score >= 70) return "#14b8a6";
+  if (score >= 50) return "#f59e0b";
+  return "#ef4444";
+}
+
+// ── circular match score ──────────────────────────────────────────────────────
+
+function MatchCircle({ score }: { score: number | null }) {
+  const r = 38;
+  const circ = 2 * Math.PI * r;
+  const pct = score ?? 0;
+  const offset = circ - (pct / 100) * circ;
+  const color = score != null ? matchColor(pct) : "#334155";
+  const label = score != null ? matchLabel(pct) : "ANALYZING";
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 bg-slate-950 rounded-2xl px-5 py-4 w-36 shrink-0 self-stretch">
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r={r} fill="none" stroke="#1e293b" strokeWidth="7" />
+        <circle
+          cx="45" cy="45" r={r} fill="none" stroke={color} strokeWidth="7"
+          strokeDasharray={circ} strokeDashoffset={offset}
+          transform="rotate(-90 45 45)" strokeLinecap="round"
+        />
+        {score != null ? (
+          <text x="45" y="49" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="20" fontWeight="700" fontFamily="system-ui">
+            {pct}%
+          </text>
+        ) : (
+          <text x="45" y="49" textAnchor="middle" dominantBaseline="middle" fill="#475569" fontSize="24" fontWeight="700" fontFamily="system-ui">
+            —
+          </text>
+        )}
+      </svg>
+      <p className="text-[11px] font-bold text-white text-center leading-tight tracking-wide">{label}</p>
+    </div>
+  );
+}
+
+// ── job card ──────────────────────────────────────────────────────────────────
+
+function JobCard({ job, appliedIds }: { job: Job; appliedIds: Set<string> }) {
+  const salary = formatSalary(job.salaryMin, job.salaryMax);
+  const posted = timeAgo(job.postedAt);
+  const isApplied = appliedIds.has(job.id);
+  const score: number | null = job.matchScore ?? null;
+
+  return (
+    <Link
+      href={`/candidate/jobs/${job.id}`}
+      className="flex gap-0 rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-indigo-300 hover:shadow-md transition group"
+    >
+      {/* Main content */}
+      <div className="flex-1 p-5 space-y-3">
+        {/* top row */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {/* company logo placeholder */}
+            <div className="h-11 w-11 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-slate-400">
+              <Briefcase size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {posted && <span className="text-xs text-slate-400">{posted}</span>}
+                {(job.applicantCount ?? 0) < 25 && (
+                  <span className="text-xs text-emerald-600 font-medium">· Be an early applicant</span>
+                )}
+              </div>
+              <h3 className="text-lg font-bold text-slate-950 leading-tight mt-0.5 group-hover:text-indigo-700 transition">
+                {job.title}
+              </h3>
+              <p className="text-sm text-slate-500 mt-0.5">
+                {job.recruiter?.companyName ?? "—"}
+                {job.category && <span className="text-slate-400"> · {job.category}</span>}
+              </p>
+            </div>
+          </div>
+
+          {isApplied && (
+            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 shrink-0 text-xs">Applied</Badge>
+          )}
+        </div>
+
+        {/* meta row */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-slate-600">
+          {job.location && (
+            <span className="flex items-center gap-1.5"><MapPin size={13} className="text-slate-400 shrink-0" />{job.location}</span>
+          )}
+          {job.type && (
+            <span className="flex items-center gap-1.5"><Clock size={13} className="text-slate-400 shrink-0" />{TYPE_LABELS[job.type] ?? job.type}</span>
+          )}
+          {salary && (
+            <span className="flex items-center gap-1.5"><DollarSign size={13} className="text-slate-400 shrink-0" />{salary}</span>
+          )}
+        </div>
+
+        {/* bottom row */}
+        <div className="flex items-center gap-3 pt-1">
+          {job.applicantCount != null && (
+            <span className="flex items-center gap-1 text-xs text-slate-400">
+              <Users size={12} />{job.applicantCount} applicant{job.applicantCount !== 1 ? "s" : ""}
+            </span>
+          )}
+          {job.requiredSkills?.slice(0, 3).map((s) => (
+            <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">{s}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* match score panel */}
+      <div className="p-3 flex items-stretch">
+        <MatchCircle score={score} />
+      </div>
+    </Link>
+  );
+}
+
+// ── page ──────────────────────────────────────────────────────────────────────
+
+type Tab = "recommended" | "applied";
 
 export default function CandidateJobsPage() {
   const { api } = useAuth();
-  const [jobs, setJobs] = useState<Job[]>([]);
   const [recommended, setRecommended] = useState<Job[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+
+  const [tab, setTab] = useState<Tab>("recommended");
+  const [search, setSearch] = useState("");
+  const [typeFilters, setTypeFilters] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       setLoading(true);
       try {
-        const [res, rec] = await Promise.all([
-          api.jobs.list({ page: 1, limit: 100 }),
-          api.jobs.recommended({ limit: 5 }).catch(() => ({ data: [] })),
+        const [rec, apps] = await Promise.all([
+          api.jobs.recommended({ limit: 100 }).catch(() => ({ data: [] as Job[] })),
+          api.applicant.myApplications({ page: 1, limit: 200 }).catch(() => ({ data: [] as Application[] })),
         ]);
         if (cancelled) return;
-        setJobs(res.data ?? []);
         setRecommended(rec.data ?? []);
+        setApplications(apps.data ?? []);
         setError(null);
       } catch (e) {
         if (cancelled) return;
@@ -74,148 +200,137 @@ export default function CandidateJobsPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [api]);
 
-  const filteredJobs = jobs.filter((job) =>
-    job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.recruiter?.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.location?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const appliedIds = useMemo(() => new Set(applications.map((a) => a.job.id)), [applications]);
 
-  if (loading) {
-    return (
-      <div className="max-w-5xl mx-auto space-y-6 pb-10">
-        <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
-          <CardContent className="p-8">
-            <div className="animate-pulse space-y-4">
-              <div className="h-6 w-56 rounded bg-slate-200" />
-              <div className="grid gap-4 pt-4">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <div key={index} className="h-32 rounded-2xl bg-slate-100" />
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  function toggleType(t: string) {
+    setTypeFilters((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
   }
 
-  return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-10">
-      {recommended.length > 0 ? (
-        <Card className="rounded-3xl border-indigo-100 shadow-sm bg-indigo-50/40">
-          <CardHeader className="border-b border-indigo-100 pb-4">
-            <CardTitle className="text-base text-indigo-900 flex items-center gap-2">
-              <Sparkles size={16} className="text-indigo-500" /> Recommended for You
-            </CardTitle>
-            <CardDescription className="text-indigo-600">AI-matched jobs based on your profile</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 space-y-2">
-            {recommended.map((job) => {
-              const salaryLabel = formatSalary(job.salaryMin, job.salaryMax);
-              return (
-                <Link
-                  key={job.id}
-                  href={`/candidate/jobs/${job.id}`}
-                  className="block rounded-2xl border border-indigo-100 bg-white p-4 transition hover:border-indigo-300 hover:shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-950">{job.title}</p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                        <Briefcase size={12} /><span>{job.recruiter?.companyName ?? "—"}</span>
-                        <MapPin size={12} /><span>{job.location ?? "—"}</span>
-                        {salaryLabel && <><DollarSign size={12} /><span>{salaryLabel}</span></>}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge className={typeClass(job.type)}>{prettyTypeLabel(job.type)}</Badge>
-                      {job.matchScore != null && (
-                        <span className="text-xs text-indigo-600 font-semibold">{job.matchScore}% match</span>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </CardContent>
-        </Card>
-      ) : null}
+  const displayJobs = useMemo(() => {
+    const source: Job[] =
+      tab === "applied"
+        ? applications.map((a) => ({ ...a.job, matchScore: a.matchScore } as unknown as Job))
+        : recommended;
 
-      <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
-        <CardHeader className="border-b border-slate-100 pb-4">
-          <CardTitle className="text-lg text-slate-950">Available Jobs</CardTitle>
-          <CardDescription>Browse and apply to opportunities</CardDescription>
-        </CardHeader>
-        <CardContent className="p-6 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+    return source.filter((job) => {
+      const q = search.toLowerCase();
+      const matchesSearch = !q ||
+        job.title?.toLowerCase().includes(q) ||
+        (job as Job & { company?: string }).company?.toLowerCase().includes(q) ||
+        job.recruiter?.companyName?.toLowerCase().includes(q) ||
+        job.location?.toLowerCase().includes(q);
+      const matchesType = typeFilters.length === 0 || typeFilters.includes(job.type ?? "");
+      return matchesSearch && matchesType;
+    });
+  }, [tab, recommended, applications, search, typeFilters]);
+
+  return (
+    <div className="max-w-5xl mx-auto pb-10 space-y-0">
+      {/* Page header */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-100 px-1 pb-0">
+        {/* Title + tabs */}
+        <div className="flex items-center gap-6 pt-4 pb-0">
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-950 uppercase">Jobs</h1>
+          <nav className="flex items-center gap-1">
+            {(
+              [
+                { id: "recommended", label: "Recommended", count: recommended.length },
+                { id: "applied", label: "Applied", count: applications.length },
+              ] as { id: Tab; label: string; count: number }[]
+            ).map(({ id, label, count }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+                  tab === id
+                    ? "border-slate-950 text-slate-950"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {label}
+                {count > 0 && (
+                  <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${tab === id ? "bg-slate-950 text-white" : "bg-slate-200 text-slate-600"}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+
+          {/* Search */}
+          <div className="ml-auto relative w-64">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
             <Input
-              placeholder="Search by title, company, or location..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              placeholder="Search by title or company..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9 text-sm"
             />
           </div>
+        </div>
 
-          {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
-
-          {filteredJobs.length > 0 ? (
-            <div className="space-y-3">
-              {filteredJobs.map((job) => {
-                const salaryLabel = formatSalary(job.salaryMin, job.salaryMax);
-                return (
-                  <Link
-                    key={job.id}
-                    href={`/candidate/jobs/${job.id}`}
-                    className="block rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-indigo-200 hover:bg-white"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <p className="font-semibold text-slate-950">{job.title ?? 'Untitled role'}</p>
-                        <div className="flex items-center gap-2 mt-2 text-sm text-slate-600">
-                          <Briefcase size={16} />
-                          <span>{job.recruiter?.companyName ?? '—'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-slate-600">
-                          <MapPin size={16} />
-                          <span>{job.location ?? '—'}</span>
-                        </div>
-                        {salaryLabel && (
-                          <div className="flex items-center gap-2 mt-1 text-sm text-slate-600">
-                            <DollarSign size={16} />
-                            <span>{salaryLabel}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <Badge className={typeClass(job.type)}>{prettyTypeLabel(job.type)}</Badge>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center gap-3 text-xs text-slate-500">
-                      <span>{job.applicantCount ?? 0} applicants</span>
-                      <span className="text-indigo-600 hover:underline font-semibold">
-                        View details →
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-sm font-medium text-slate-900">No jobs found</p>
-              <p className="mt-1 text-sm text-slate-500">Try adjusting your search criteria</p>
-            </div>
+        {/* Filter chips */}
+        <div className="flex items-center gap-2 py-3 overflow-x-auto">
+          {TYPE_FILTERS.map((t) => (
+            <button
+              key={t}
+              onClick={() => toggleType(t)}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors shrink-0 ${
+                typeFilters.includes(t)
+                  ? "bg-slate-950 text-white border-slate-950"
+                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+              }`}
+            >
+              {TYPE_LABELS[t]}
+              {typeFilters.includes(t) && <X size={11} />}
+            </button>
+          ))}
+          {(typeFilters.length > 0 || search) && (
+            <button
+              onClick={() => { setTypeFilters([]); setSearch(""); }}
+              className="text-xs text-slate-400 hover:text-slate-600 px-2 shrink-0"
+            >
+              Clear all
+            </button>
           )}
-        </CardContent>
-      </Card>
+          <span className="ml-auto shrink-0 text-xs text-slate-400">
+            {displayJobs.length} job{displayJobs.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="pt-4 space-y-3 px-1">
+        {error && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
+        )}
+
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-36 rounded-2xl bg-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : displayJobs.length > 0 ? (
+          displayJobs.map((job) => (
+            <JobCard key={job.id} job={job} appliedIds={appliedIds} />
+          ))
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
+            <p className="text-sm font-semibold text-slate-700">
+              {tab === "recommended" ? "No recommendations yet" : "No applications yet"}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {tab === "recommended"
+                ? "Complete your profile to get AI-matched job recommendations."
+                : "Apply to jobs from the Recommended tab."}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
