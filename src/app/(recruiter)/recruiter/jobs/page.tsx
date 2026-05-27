@@ -10,9 +10,11 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { useEffect, useState } from "react";
 import type { Job } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
+import { useLocale } from "@/lib/i18n";
 
 export default function RecruiterJobsPage() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -54,13 +56,13 @@ export default function RecruiterJobsPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Jobs</h1>
-          <p className="text-sm text-gray-500 mt-1">Your real job postings.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tr("jobs")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tr("rjNoJobs")}</p>
         </div>
         <div className="flex items-center gap-3">
           <PostJobDialog
             onSuccess={loadJobs}
-            trigger={<Button className="bg-[#4238b8] hover:bg-[#342c94] text-white font-semibold">+ Post Job</Button>}
+            trigger={<Button className="bg-[#4238b8] hover:bg-[#342c94] text-white font-semibold">+ {tr("rjPostJob")}</Button>}
           />
           <Button variant="outline" className="flex items-center gap-2 font-semibold" disabled>
             <Filter size={16} /> Filter
@@ -106,7 +108,7 @@ export default function RecruiterJobsPage() {
                       <MapPin size={14} className="mr-1" />
                       {job.location}
                     </div>
-                    <div className="text-sm font-bold text-gray-900">{job.applicantCount} applicants</div>
+                    <div className="text-sm font-bold text-gray-900">{job.applicantCount} {tr("rjApplicants")}</div>
                   </div>
                 </CardContent>
               </Card>
@@ -122,7 +124,7 @@ export default function RecruiterJobsPage() {
           </div>
         ))}
         {jobs.length === 0 ? (
-          <div className="text-sm text-gray-500">No jobs yet. Click "Post Job" to create one.</div>
+          <div className="text-sm text-gray-500">{tr("rjNoJobs")}</div>
         ) : null}
       </div>
     </div>

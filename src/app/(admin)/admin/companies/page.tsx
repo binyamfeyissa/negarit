@@ -8,11 +8,13 @@ import { Building, Users, Briefcase, Globe, CheckCircle, XCircle } from "lucide-
 import { useAuth } from "@/components/auth/auth-provider";
 import type { RecruiterProfile } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
+import { useLocale } from "@/lib/i18n";
 
 type AnyRecruiter = Record<string, unknown>;
 
 export default function AdminCompaniesPage() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [recruiters, setRecruiters] = useState<AnyRecruiter[]>([]);
   const [pending, setPending] = useState<RecruiterProfile[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function AdminCompaniesPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Companies</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{tr("companies")}</h1>
         <p className="text-sm text-slate-500">Browse recruiter organizations and manage approvals.</p>
       </div>
 
@@ -77,7 +79,7 @@ export default function AdminCompaniesPage() {
           <CardHeader className="px-4 py-3 bg-emerald-50 border-b border-emerald-100">
             <div className="flex items-center space-x-3">
               <Users size={18} className="text-emerald-600" />
-              <CardTitle className="text-sm font-semibold">Total Companies</CardTitle>
+              <CardTitle className="text-sm font-semibold">{tr("acTotalCompanies")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-4">
@@ -90,7 +92,7 @@ export default function AdminCompaniesPage() {
           <CardHeader className="px-4 py-3 bg-blue-50 border-b border-blue-100">
             <div className="flex items-center space-x-3">
               <Briefcase size={18} className="text-blue-600" />
-              <CardTitle className="text-sm font-semibold">Active</CardTitle>
+              <CardTitle className="text-sm font-semibold">{tr("acActiveCompanies")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-4">
@@ -103,7 +105,7 @@ export default function AdminCompaniesPage() {
           <CardHeader className="px-4 py-3 bg-indigo-50 border-b border-indigo-100">
             <div className="flex items-center space-x-3">
               <Building size={18} className="text-indigo-600" />
-              <CardTitle className="text-sm font-semibold">Verified</CardTitle>
+              <CardTitle className="text-sm font-semibold">{tr("acVerifiedCompanies")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-4">
@@ -117,7 +119,7 @@ export default function AdminCompaniesPage() {
         <Card className="rounded-2xl shadow-sm border-amber-200">
           <CardHeader className="bg-amber-50 border-b border-amber-100 px-4 py-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-bold text-amber-900">Pending Approval</CardTitle>
+              <CardTitle className="text-base font-bold text-amber-900">{tr("acPendingApproval")}</CardTitle>
               <Badge className="bg-amber-100 text-amber-800 border-amber-200">{pending.length} pending</Badge>
             </div>
           </CardHeader>
@@ -136,7 +138,7 @@ export default function AdminCompaniesPage() {
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     <CheckCircle size={14} className="mr-1" />
-                    Approve
+                    {tr("acApprove")}
                   </Button>
                   <Button
                     size="sm"
@@ -146,7 +148,7 @@ export default function AdminCompaniesPage() {
                     className="text-red-600 border-red-200 hover:bg-red-50"
                   >
                     <XCircle size={14} className="mr-1" />
-                    Reject
+                    {tr("acReject")}
                   </Button>
                 </div>
               </div>
@@ -157,7 +159,7 @@ export default function AdminCompaniesPage() {
 
       <Card className="rounded-2xl shadow-sm">
         <CardHeader className="bg-white border-b border-gray-50 flex items-center justify-between px-4 py-3">
-          <CardTitle className="text-base font-bold">Company Directory</CardTitle>
+          <CardTitle className="text-base font-bold">{tr("acDirectory")}</CardTitle>
           <div className="text-sm text-gray-500">{loading ? "Loading…" : `${total} companies`}</div>
         </CardHeader>
         <CardContent className="p-4">
@@ -202,8 +204,8 @@ export default function AdminCompaniesPage() {
                         </div>
                         <div className="text-sm">
                           {c.isVerified
-                            ? <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">Verified</span>
-                            : <span className="px-2 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-medium">Unverified</span>
+                            ? <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">{tr("statusVerified")}</span>
+                            : <span className="px-2 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-medium">{tr("statusUnverified")}</span>
                           }
                         </div>
                       </div>

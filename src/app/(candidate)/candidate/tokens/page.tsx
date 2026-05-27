@@ -9,12 +9,14 @@ import { useAuth } from "@/components/auth/auth-provider";
 import type { TokenPackage, PaymentHistoryItem, TokenBalance, ApiErrorDetail } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
 import { Coins, CreditCard, History, ExternalLink, Zap } from "lucide-react";
+import { useLocale } from "@/lib/i18n";
 
 const ETB_PER_TOKEN = 10;
 const CUSTOM_MIN_ETB = 100;
 
 export default function CandidateTokensPage() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [balance, setBalance] = useState<TokenBalance | null>(null);
   const [packages, setPackages] = useState<TokenPackage[]>([]);
   const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
@@ -119,8 +121,8 @@ export default function CandidateTokensPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Tokens</h1>
-        <p className="text-sm text-slate-500 mt-1">Buy tokens to unlock AI-powered tools like skill gap analysis and mock interviews.</p>
+        <h1 className="text-2xl font-bold text-slate-900">{tr("tokens")}</h1>
+        <p className="text-sm text-slate-500 mt-1">{tr("cdTokensDesc")}</p>
       </div>
 
       {error ? (
@@ -142,7 +144,7 @@ export default function CandidateTokensPage() {
             <Coins size={28} className="text-amber-600" />
           </div>
           <div>
-            <p className="text-sm text-amber-700 font-medium">Current Balance</p>
+            <p className="text-sm text-amber-700 font-medium">{tr("ctBalance")}</p>
             <p className="text-4xl font-bold text-amber-900">{loading ? "—" : (balance?.tokens ?? 0)}</p>
             <p className="text-xs text-amber-600 mt-1">tokens available · 1 token = {ETB_PER_TOKEN} ETB</p>
           </div>
@@ -153,7 +155,7 @@ export default function CandidateTokensPage() {
       {balance?.history && balance.history.length > 0 ? (
         <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
           <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-base flex items-center gap-2"><History size={16} /> Token History</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><History size={16} /> {tr("ctHistory")}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">
@@ -179,7 +181,7 @@ export default function CandidateTokensPage() {
       {/* Packages */}
       <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
         <CardHeader className="border-b border-slate-100 pb-4">
-          <CardTitle className="text-base flex items-center gap-2"><CreditCard size={16} /> Buy Tokens</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2"><CreditCard size={16} /> {tr("ctBuyTokens")}</CardTitle>
           <CardDescription>Purchase a token package to unlock AI features. Powered by Chapa.</CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
@@ -209,7 +211,7 @@ export default function CandidateTokensPage() {
                     size="sm"
                   >
                     <ExternalLink size={14} className="mr-1" />
-                    {initiating === pkg.id ? "Redirecting..." : "Buy Now"}
+                    {initiating === pkg.id ? tr("loadingText") : tr("ctPurchase")}
                   </Button>
                 </div>
               ))}
@@ -220,7 +222,7 @@ export default function CandidateTokensPage() {
           <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 p-5">
             <div className="flex items-center gap-2 mb-3">
               <Zap size={15} className="text-indigo-500" />
-              <p className="text-sm font-semibold text-indigo-800">Custom Amount</p>
+              <p className="text-sm font-semibold text-indigo-800">{tr("ctCustomAmount")}</p>
               <span className="text-xs text-indigo-400 ml-auto">1 token = {ETB_PER_TOKEN} ETB</span>
             </div>
             <div className="flex gap-3 items-end">
@@ -250,7 +252,7 @@ export default function CandidateTokensPage() {
                 size="sm"
               >
                 <ExternalLink size={14} className="mr-1" />
-                {customInitiating ? "Redirecting..." : "Pay"}
+                {customInitiating ? tr("loadingText") : tr("ctPurchase")}
               </Button>
             </div>
           </div>
@@ -261,7 +263,7 @@ export default function CandidateTokensPage() {
       {history.length > 0 ? (
         <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
           <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-base flex items-center gap-2"><History size={16} /> Payment History</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><History size={16} /> {tr("ctPaymentHistory")}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">

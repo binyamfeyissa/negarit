@@ -10,9 +10,11 @@ import Link from "next/link";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { Job } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
+import { useLocale } from "@/lib/i18n";
 
 export default function JobsPage() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [q, setQ] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -66,12 +68,12 @@ export default function JobsPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold mb-1 border-gray-100">Jobs</h1>
+          <h1 className="text-2xl font-bold mb-1 border-gray-100">{tr("allJobs")}</h1>
           <p className="text-gray-500 text-sm">Live jobs from the backend.</p>
         </div>
         <Button onClick={exportCsv} variant="outline" className="flex items-center space-x-2 text-sm text-gray-700 bg-white border-gray-200">
           <Download size={16} />
-          <span>Export CSV</span>
+          <span>{tr("exportCSV")}</span>
         </Button>
       </div>
 
@@ -79,7 +81,7 @@ export default function JobsPage() {
 
       <Card className="shadow-sm border-gray-100 rounded-xl overflow-hidden">
         <div className="p-4 flex flex-row items-center justify-between bg-white border-b border-gray-50">
-          <h2 className="text-base font-bold">All Jobs</h2>
+          <h2 className="text-base font-bold">{tr("ajAllJobs")}</h2>
           <div className="flex space-x-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" />
@@ -91,11 +93,11 @@ export default function JobsPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50 hover:bg-gray-50/50 border-gray-100">
-                <TableHead className="text-gray-500 font-medium text-xs">Title</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Company</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Type</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Location</TableHead>
-                <TableHead className="text-right text-gray-500 font-medium text-xs">Applicants</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("adColTitle")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("adColCompany")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("adColType")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("adColLocation")}</TableHead>
+                <TableHead className="text-right text-gray-500 font-medium text-xs">{tr("adColApplicants")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

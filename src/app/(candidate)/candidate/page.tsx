@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api/types";
 import { fileUrl } from "@/lib/config";
 import { Briefcase, Target, Clock, CheckCircle2, Upload, ArrowUpRight, FileText, Coins, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n";
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -51,6 +52,7 @@ function StatCard({ title, value, subtitle, icon }: { title: string; value: stri
 
 export default function CandidateDashboardPage() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [profile, setProfile] = useState<ApplicantProfile | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +137,7 @@ export default function CandidateDashboardPage() {
         <div className="absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-teal-500/10 blur-3xl" />
         <div className="relative space-y-5 p-8 md:p-10">
           <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.25em] text-slate-300/80">Welcome back,</p>
+            <p className="text-sm uppercase tracking-[0.25em] text-slate-300/80">{tr("cdWelcome")},</p>
             <h1 className="text-3xl font-bold tracking-tight md:text-5xl">{profile?.full_name ?? "Candidate"}</h1>
             <p className="max-w-2xl text-sm leading-7 text-slate-200 md:text-base">
               {totalApplications > 0
@@ -150,11 +152,11 @@ export default function CandidateDashboardPage() {
             </Badge>
             {profile?.tokens != null && (
               <Badge className="border-amber-400/20 bg-amber-400/15 text-amber-100 hover:bg-amber-400/15 flex items-center gap-1">
-                <Coins size={11} /> {profile.tokens} tokens
+                <Coins size={11} /> {profile.tokens} {tr("tokens")}
               </Badge>
             )}
             {profile?.is_verified && (
-              <Badge className="border-emerald-400/20 bg-emerald-400/15 text-emerald-100 hover:bg-emerald-400/15">Verified</Badge>
+              <Badge className="border-emerald-400/20 bg-emerald-400/15 text-emerald-100 hover:bg-emerald-400/15">{tr("statusVerified")}</Badge>
             )}
             {offeredCount > 0 && (
               <Badge className="border-amber-400/20 bg-amber-400/15 text-amber-100 hover:bg-amber-400/15">
@@ -170,17 +172,17 @@ export default function CandidateDashboardPage() {
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Applications" value={totalApplications} subtitle="Total submitted" icon={<Briefcase size={20} />} />
-        <StatCard title="Avg Match" value={`${avgMatchScore}%`} subtitle="Across all applications" icon={<Target size={20} />} />
-        <StatCard title="Interviews" value={interviewCount} subtitle="Active interview rounds" icon={<Clock size={20} />} />
-        <StatCard title="Offers" value={offeredCount} subtitle="Job offers received" icon={<CheckCircle2 size={20} />} />
+        <StatCard title={tr("cdTotalApps")} value={totalApplications} subtitle="Total submitted" icon={<Briefcase size={20} />} />
+        <StatCard title={tr("cdAvgMatch")} value={`${avgMatchScore}%`} subtitle="Across all applications" icon={<Target size={20} />} />
+        <StatCard title={tr("cdActiveInterviews")} value={interviewCount} subtitle="Active interview rounds" icon={<Clock size={20} />} />
+        <StatCard title={tr("cdOffers")} value={offeredCount} subtitle="Job offers received" icon={<CheckCircle2 size={20} />} />
       </div>
 
       {/* Profile completeness + resume */}
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
         <Card className="rounded-3xl border-slate-200 shadow-sm bg-white/95">
           <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-lg text-slate-950">Profile Completeness</CardTitle>
+            <CardTitle className="text-lg text-slate-950">{tr("cdProfileCompleteness")}</CardTitle>
             <CardDescription>Complete your profile to get better job matches</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-5">
@@ -194,13 +196,13 @@ export default function CandidateDashboardPage() {
 
             <div className="grid grid-cols-2 gap-3 text-sm">
               {[
-                { label: "Full name", done: !!profile?.full_name },
-                { label: "Phone", done: !!profile?.phone },
-                { label: "Experience years", done: profile?.experience_years != null },
-                { label: "Preferred roles", done: (profile?.preferred_roles?.length ?? 0) > 0 },
-                { label: "Skills", done: (profile?.parsed_skills?.length ?? 0) > 0 },
-                { label: "Resume uploaded", done: !!profile?.resume_url },
-                { label: "Verification doc", done: !!profile?.verification_doc_url },
+                { label: tr("cdFieldFullName"), done: !!profile?.full_name },
+                { label: tr("cdFieldPhone"), done: !!profile?.phone },
+                { label: tr("cdFieldExperience"), done: profile?.experience_years != null },
+                { label: tr("cdFieldRoles"), done: (profile?.preferred_roles?.length ?? 0) > 0 },
+                { label: tr("cdFieldSkills"), done: (profile?.parsed_skills?.length ?? 0) > 0 },
+                { label: tr("cdFieldResume"), done: !!profile?.resume_url },
+                { label: tr("cdFieldVerDoc"), done: !!profile?.verification_doc_url },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-2">
                   <span className={`h-2 w-2 rounded-full shrink-0 ${item.done ? "bg-emerald-500" : "bg-slate-200"}`} />
@@ -211,7 +213,7 @@ export default function CandidateDashboardPage() {
 
             <Link href="/candidate/profile">
               <Button variant="outline" className="w-full">
-                {completeness < 100 ? "Complete Profile" : "View Profile"}
+                {completeness < 100 ? tr("completeProfile") : tr("profile")}
               </Button>
             </Link>
           </CardContent>
@@ -219,7 +221,7 @@ export default function CandidateDashboardPage() {
 
         <Card className="rounded-3xl border-slate-200 shadow-sm bg-white/95">
           <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-lg text-slate-950">Resume</CardTitle>
+            <CardTitle className="text-lg text-slate-950">{tr("cdResumeCard")}</CardTitle>
             <CardDescription>Your CV for AI-powered matching</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-4">
@@ -230,7 +232,7 @@ export default function CandidateDashboardPage() {
                   <div>
                     <p className="text-sm font-semibold text-indigo-900">Resume on file</p>
                     {profile?.resume_score != null && (
-                      <p className="text-xs text-indigo-600">Score: {profile.resume_score}%</p>
+                      <p className="text-xs text-indigo-600">{tr("cdResumeScore")}: {profile.resume_score}%</p>
                     )}
                   </div>
                 </div>
@@ -240,7 +242,7 @@ export default function CandidateDashboardPage() {
               </div>
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500 text-center">
-                No resume uploaded yet
+                {tr("cdNoResume")}
               </div>
             )}
 
@@ -264,7 +266,7 @@ export default function CandidateDashboardPage() {
                   onClick={() => resumeInputRef.current?.click()}
                 >
                   <Upload size={14} className="mr-2" />
-                  {uploadingResume ? "Uploading..." : resumeUrl ? "Re-upload" : "Upload Resume"}
+                  {uploadingResume ? tr("loadingText") : resumeUrl ? tr("cdReplaceResume") : tr("cdUploadResume")}
                 </Button>
                 <input
                   ref={resumeInputRef}
@@ -289,13 +291,13 @@ export default function CandidateDashboardPage() {
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-lg text-slate-950">Recent Applications</CardTitle>
+                <CardTitle className="text-lg text-slate-950">{tr("cdRecentApps")}</CardTitle>
                 <CardDescription>Latest activity across your job applications</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <Badge className="border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-50">{totalApplications} total</Badge>
                 <Link href="/candidate/jobs">
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">Browse Jobs</Button>
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white">{tr("cdViewJobs")}</Button>
                 </Link>
               </div>
             </div>
@@ -316,15 +318,15 @@ export default function CandidateDashboardPage() {
                     <Badge className={statusClass(app.status)}>{app.status}</Badge>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                    {app.matchScore != null && <span>Match {app.matchScore}%</span>}
+                    {app.matchScore != null && <span>{tr("cdMatchScore")} {app.matchScore}%</span>}
                     <span>{formatDate(app.appliedAt)}</span>
                   </div>
                 </Link>
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-                No applications yet.{" "}
-                <Link href="/candidate/jobs" className="text-indigo-600 hover:underline">Browse open jobs →</Link>
+                {tr("cdNoApps")}{" "}
+                <Link href="/candidate/jobs" className="text-indigo-600 hover:underline">{tr("cdViewJobs")} →</Link>
               </div>
             )}
           </CardContent>
@@ -334,7 +336,7 @@ export default function CandidateDashboardPage() {
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-lg text-slate-950">Top Matches</CardTitle>
+                <CardTitle className="text-lg text-slate-950">{tr("cdTopMatches")}</CardTitle>
                 <CardDescription>Best scoring applications</CardDescription>
               </div>
               <Badge className="border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">{topMatches.length} ranked</Badge>
@@ -361,7 +363,7 @@ export default function CandidateDashboardPage() {
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500">
-                No applications yet.
+                {tr("cdNoApps")}
               </div>
             )}
           </CardContent>

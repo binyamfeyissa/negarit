@@ -8,6 +8,7 @@ import { Search, MapPin, DollarSign, Briefcase, Clock, Users, X } from "lucide-r
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useLocale } from "@/lib/i18n";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -171,6 +172,7 @@ type Tab = "recommended" | "applied";
 
 export default function CandidateJobsPage() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [recommended, setRecommended] = useState<Job[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,8 +239,8 @@ export default function CandidateJobsPage() {
           <nav className="flex items-center gap-1">
             {(
               [
-                { id: "recommended", label: "Recommended", count: recommended.length },
-                { id: "applied", label: "Applied", count: applications.length },
+                { id: "recommended", label: tr("cjRecommended"), count: recommended.length },
+                { id: "applied", label: tr("cjApplied"), count: applications.length },
               ] as { id: Tab; label: string; count: number }[]
             ).map(({ id, label, count }) => (
               <button
@@ -264,7 +266,7 @@ export default function CandidateJobsPage() {
           <div className="ml-auto relative w-64">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
             <Input
-              placeholder="Search by title or company..."
+              placeholder={tr("cjSearchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-9 text-sm"
@@ -293,7 +295,7 @@ export default function CandidateJobsPage() {
               onClick={() => { setTypeFilters([]); setSearch(""); }}
               className="text-xs text-slate-400 hover:text-slate-600 px-2 shrink-0"
             >
-              Clear all
+              {tr("alClearFilters")}
             </button>
           )}
           <span className="ml-auto shrink-0 text-xs text-slate-400">
@@ -321,12 +323,7 @@ export default function CandidateJobsPage() {
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center">
             <p className="text-sm font-semibold text-slate-700">
-              {tab === "recommended" ? "No recommendations yet" : "No applications yet"}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              {tab === "recommended"
-                ? "Complete your profile to get AI-matched job recommendations."
-                : "Apply to jobs from the Recommended tab."}
+              {tab === "recommended" ? tr("cjNoRecommended") : tr("cjNoApplied")}
             </p>
           </div>
         )}

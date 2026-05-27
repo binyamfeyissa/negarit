@@ -11,6 +11,7 @@ import type { ApplicantProfile, DocType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
 import { fileUrl } from "@/lib/config";
 import { Coins, Upload, ShieldCheck, FileText, ExternalLink, RefreshCw } from "lucide-react";
+import { useLocale } from "@/lib/i18n";
 
 const DOC_TYPES: { value: DocType; label: string }[] = [
   { value: "DEGREE", label: "Degree" },
@@ -26,6 +27,7 @@ function completenessColor(pct: number) {
 
 export default function CandidateProfilePage() {
   const { api, user } = useAuth();
+  const { tr } = useLocale();
   const [profile, setProfile] = useState<ApplicantProfile | null>(null);
   const [tokens, setTokens] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,7 +165,7 @@ export default function CandidateProfilePage() {
               <p className="text-sm text-slate-500 mt-1">{user?.email}</p>
               <div className="flex gap-2 mt-3 flex-wrap">
                 <Badge className={profile?.is_verified ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"}>
-                  {profile?.is_verified ? "Verified" : "Unverified"}
+                  {profile?.is_verified ? tr("statusVerified") : tr("statusUnverified")}
                 </Badge>
                 <Badge className={completenessColor(completeness)}>
                   {completeness}% complete
@@ -178,7 +180,7 @@ export default function CandidateProfilePage() {
             <div className="flex items-center gap-2 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3">
               <Coins size={20} className="text-amber-600" />
               <div>
-                <p className="text-xs text-amber-600 font-medium">Token Balance</p>
+                <p className="text-xs text-amber-600 font-medium">{tr("cdTokenBalance")}</p>
                 <p className="text-xl font-bold text-amber-800">{tokens ?? "—"}</p>
               </div>
             </div>
@@ -207,7 +209,7 @@ export default function CandidateProfilePage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileText size={18} className="text-indigo-600" />
-            <CardTitle>Resume</CardTitle>
+            <CardTitle>{tr("cdResumeCard")}</CardTitle>
           </div>
           <CardDescription>Your CV is used to calculate match scores and parse skills</CardDescription>
         </CardHeader>
@@ -284,40 +286,40 @@ export default function CandidateProfilePage() {
       {/* Edit profile */}
       <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
         <CardHeader>
-          <CardTitle>Edit Profile</CardTitle>
+          <CardTitle>{tr("rpEditProfile")}</CardTitle>
           <CardDescription>Update your personal details and preferences</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Full Name</label>
+              <label className="text-sm font-medium text-slate-700">{tr("fullNameLabel")}</label>
               <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" disabled={loading} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Phone</label>
+              <label className="text-sm font-medium text-slate-700">{tr("phoneLabel")}</label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2519..." disabled={loading} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Website</label>
+              <label className="text-sm font-medium text-slate-700">{tr("rpWebsite")}</label>
               <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://..." disabled={loading} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Years of Experience</label>
+              <label className="text-sm font-medium text-slate-700">{tr("cdFieldExperience")}</label>
               <Input value={experienceYears} onChange={(e) => setExperienceYears(e.target.value)} placeholder="3" type="number" min={0} disabled={loading} />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium text-slate-700">Preferred Roles (comma-separated)</label>
+              <label className="text-sm font-medium text-slate-700">{tr("cdFieldRoles")}</label>
               <Input value={preferredRoles} onChange={(e) => setPreferredRoles(e.target.value)} placeholder="Software Engineer, Backend Developer" disabled={loading} />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-medium text-slate-700">Skills (comma-separated)</label>
+              <label className="text-sm font-medium text-slate-700">{tr("cdFieldSkills")}</label>
               <Input value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="Python, React, SQL" disabled={loading} />
             </div>
           </div>
 
           <div className="pt-2">
             <Button onClick={handleSave} disabled={saving || loading} className="bg-indigo-600 hover:bg-indigo-700">
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? tr("loadingText") : tr("save")}
             </Button>
           </div>
         </CardContent>

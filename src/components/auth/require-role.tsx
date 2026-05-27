@@ -29,7 +29,7 @@ export function RequireRole({
   useEffect(() => {
     if (!problem) return;
     if (problem === "not_authed") {
-      router.replace(`/?next=${encodeURIComponent(pathname || "/")}`);
+      router.replace(`/login?next=${encodeURIComponent(pathname || "/")}`);
       return;
     }
     router.replace(roleHome(user?.role ?? "APPLICANT"));

@@ -9,6 +9,7 @@ import type { Job, SkillGapResult, SkillGapAnalysis, MockInterviewResult } from 
 import { ApiError } from "@/lib/api/types";
 import { Briefcase, MapPin, DollarSign, Calendar, Users, ArrowLeft, BrainCircuit, MessageSquare, Coins, CheckCircle2, XCircle, AlertTriangle, Lightbulb } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n";
 
 function typeClass(type: string) {
   return type === "FULL_TIME"
@@ -122,6 +123,7 @@ function SkillGapCard({ result }: { result: SkillGapResult }) {
 export default function CandidateJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -215,11 +217,11 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
     return (
       <div className="max-w-4xl mx-auto">
         <Link href="/candidate/jobs" className="inline-flex items-center gap-2 text-indigo-600 hover:underline mb-4">
-          <ArrowLeft size={18} /> Back to jobs
+          <ArrowLeft size={18} /> {tr("jobs")}
         </Link>
         <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
           <CardContent className="p-8 text-center">
-            <p className="text-slate-900 font-semibold">Job not found</p>
+            <p className="text-slate-900 font-semibold">{tr("noDataText")}</p>
           </CardContent>
         </Card>
       </div>
@@ -231,7 +233,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
       <Link href="/candidate/jobs" className="inline-flex items-center gap-2 text-indigo-600 hover:underline">
-        <ArrowLeft size={18} /> Back to jobs
+        <ArrowLeft size={18} /> {tr("jobs")}
       </Link>
 
       <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950 text-white shadow-2xl">
@@ -276,7 +278,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
             className="border-indigo-200 text-indigo-700 hover:bg-indigo-100"
           >
             <BrainCircuit size={14} className="mr-1" />
-            {skillGapLoading ? "Analysing..." : "Skill Gap Analysis"}
+            {skillGapLoading ? tr("cjAnalyzing") : tr("cjSkillGap")}
           </Button>
           <Button
             variant="outline"
@@ -286,7 +288,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
             className="border-indigo-200 text-indigo-700 hover:bg-indigo-100"
           >
             <MessageSquare size={14} className="mr-1" />
-            {mockInterviewLoading ? "Generating..." : "Mock Interview"}
+            {mockInterviewLoading ? tr("loadingText") : tr("cjMockInterview")}
           </Button>
         </CardContent>
       </Card>
@@ -315,7 +317,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
         <div className="space-y-6">
           <Card className="rounded-3xl border-slate-200 shadow-sm bg-white/95">
             <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-lg text-slate-950">Job Description</CardTitle>
+              <CardTitle className="text-lg text-slate-950">{tr("cjJobDetails")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{job.description || "No description provided."}</p>
@@ -324,7 +326,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
 
           <Card className="rounded-3xl border-slate-200 shadow-sm bg-white/95">
             <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-lg text-slate-950">Requirements</CardTitle>
+              <CardTitle className="text-lg text-slate-950">{tr("cjRequirements")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               {job.requirements?.length > 0 ? (
@@ -339,7 +341,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
 
           <Card className="rounded-3xl border-slate-200 shadow-sm bg-white/95">
             <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-lg text-slate-950">Required Skills</CardTitle>
+              <CardTitle className="text-lg text-slate-950">{tr("cjRequiredSkills")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               {job.requiredSkills?.length > 0 ? (
@@ -358,11 +360,11 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
         <div className="space-y-4">
           <Card className="rounded-3xl border-slate-200 shadow-sm bg-white/95 sticky top-20">
             <CardHeader className="border-b border-slate-100 pb-4">
-              <CardTitle className="text-base text-slate-950">Apply Now</CardTitle>
+              <CardTitle className="text-base text-slate-950">{tr("cjApply")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-slate-700">Cover Letter (optional)</label>
+                <label className="text-sm font-medium text-slate-700">{tr("cjCoverLetter")}</label>
                 <textarea
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
@@ -371,7 +373,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
                 />
               </div>
               <Button onClick={handleApply} disabled={applyLoading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-10">
-                {applyLoading ? "Applying..." : "Submit Application"}
+                {applyLoading ? tr("cjApplying") : tr("cjApply")}
               </Button>
               <p className="text-xs text-slate-500 text-center">By applying, you agree to share your profile with the recruiter.</p>
             </CardContent>
@@ -379,7 +381,7 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
 
           <Card className="rounded-3xl border-slate-200 shadow-sm bg-slate-50/95">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base text-slate-950">Company</CardTitle>
+              <CardTitle className="text-base text-slate-950">{tr("cjCompany")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-3 text-sm">
               <div>

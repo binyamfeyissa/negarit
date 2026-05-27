@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ApiError } from "@/lib/api/types";
 import { roleHome, useAuth } from "@/components/auth/auth-provider";
+import { useLocale } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 type Mode = "login" | "register_applicant" | "register_recruiter";
 
 export default function AuthPage() {
+  return (
+    <Suspense>
+      <AuthForm />
+    </Suspense>
+  );
+}
+
+function AuthForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, registerApplicant, registerRecruiter } = useAuth();
+  const { tr } = useLocale();
 
   const [mode, setMode] = useState<Mode>("login");
   const [loading, setLoading] = useState(false);
@@ -31,16 +43,16 @@ export default function AuthPage() {
   const [licenseFile, setLicenseFile] = useState<File | null>(null);
 
   const title = useMemo(() => {
-    if (mode === "login") return "Welcome Back";
-    if (mode === "register_applicant") return "Create Applicant Account";
-    return "Create Recruiter Account";
-  }, [mode]);
+    if (mode === "login") return tr("loginTitle");
+    if (mode === "register_applicant") return tr("regApplicantTitle");
+    return tr("regRecruiterTitle");
+  }, [mode, tr]);
 
   const subtitle = useMemo(() => {
-    if (mode === "login") return "Log in to your account.";
-    if (mode === "register_applicant") return "Register as an applicant to upload your resume and apply.";
-    return "Recruiters start as PENDING until an admin approves them.";
-  }, [mode]);
+    if (mode === "login") return tr("loginSubtitle");
+    if (mode === "register_applicant") return tr("regApplicantSubtitle");
+    return tr("regRecruiterSubtitle");
+  }, [mode, tr]);
 
   async function onSubmit() {
     setError(null);
@@ -48,7 +60,8 @@ export default function AuthPage() {
     try {
       if (mode === "login") {
         const u = await login(email, password);
-        router.push(roleHome(u.role));
+        const next = searchParams.get("next");
+        router.push(next && next.startsWith("/") ? next : roleHome(u.role));
         return;
       }
       if (mode === "register_applicant") {
@@ -63,7 +76,6 @@ export default function AuthPage() {
         industry,
         licenseFile,
       });
-      // Recruiter register returns message + userId (no login yet)
       setMode("login");
       setError(`Recruiter registered (${res.userId}). Await admin approval, then log in.`);
     } catch (e) {
@@ -76,8 +88,9 @@ export default function AuthPage() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="w-full flex justify-center mb-8">
-        <Image src="/logo.png" alt="Negarit" width={210} height={60} priority className="h-14 w-auto object-contain" />
+      <div className="w-full flex items-center justify-between mb-6">
+        <Image src="/logo.png" alt="Negarit" width={140} height={40} priority className="h-10 w-auto object-contain" />
+        <LanguageSwitcher />
       </div>
 
       <Card className="w-full rounded-2xl shadow-sm border-gray-100 p-4">
@@ -98,85 +111,67 @@ export default function AuthPage() {
 
           {mode === "register_applicant" ? (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Full Name <span className="text-red-500">*</span></label>
-              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your name" className="rounded-xl border-gray-200" />
+              <label className="text-sm font-medium">{tr("fullNameLabel")} <span className="text-red-500">*</span></label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Abebe Bekele" className="rounded-xl border-gray-200" />
             </div>
           ) : null}
 
           {mode === "register_recruiter" ? (
             <>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Company Name <span className="text-red-500">*</span></label>
-                <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Company" className="rounded-xl border-gray-200" />
+                <label className="text-sm font-medium">{tr("companyNameLabel")} <span className="text-red-500">*</span></label>
+                <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Ethio Telecom" className="rounded-xl border-gray-200" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Industry <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium">{tr("industryLabel")} <span className="text-red-500">*</span></label>
                 <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="FinTech" className="rounded-xl border-gray-200" />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">License Document (optional)</label>
-                <Input
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={(e) => setLicenseFile(e.target.files?.[0] ?? null)}
-                  className="rounded-xl border-gray-200"
-                />
+                <label className="text-sm font-medium">{tr("licenseDocLabel")}</label>
+                <Input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setLicenseFile(e.target.files?.[0] ?? null)} className="rounded-xl border-gray-200" />
               </div>
             </>
           ) : null}
 
           {mode === "register_applicant" ? (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Phone</label>
+              <label className="text-sm font-medium">{tr("phoneLabel")}</label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+2519..." className="rounded-xl border-gray-200" />
             </div>
           ) : null}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email Address <span className="text-red-500">*</span></label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Enter your email" className="rounded-xl border-gray-200" />
+            <label className="text-sm font-medium">{tr("emailLabel")} <span className="text-red-500">*</span></label>
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="name@example.com" className="rounded-xl border-gray-200" />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Password <span className="text-red-500">*</span></label>
-            <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Enter your password" className="rounded-xl border-gray-200" />
+            <label className="text-sm font-medium">{tr("passwordLabel")} <span className="text-red-500">*</span></label>
+            <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="••••••••" className="rounded-xl border-gray-200" />
           </div>
 
           {mode === "login" ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Checkbox id="keep-login" />
-                <label htmlFor="keep-login" className="text-sm font-medium leading-none text-gray-500">
-                  Keep me logged in
-                </label>
+                <label htmlFor="keep-login" className="text-sm font-medium leading-none text-gray-500">{tr("keepLoggedIn")}</label>
               </div>
-              <span className="text-sm text-gray-400 font-medium">Forgot Password (API not available)</span>
+              <span className="text-sm text-gray-400 font-medium">{tr("forgotPasswordLink")}</span>
             </div>
           ) : null}
 
-          <Button
-            disabled={loading}
-            onClick={onSubmit}
-            className="w-full bg-indigo-500 hover:bg-indigo-600 rounded-xl mt-2 p-6"
-            size="lg"
-          >
-            {loading ? "Please wait..." : mode === "login" ? "Login" : "Create account"}
+          <Button disabled={loading} onClick={onSubmit} className="w-full bg-indigo-500 hover:bg-indigo-600 rounded-xl mt-2 p-6" size="lg">
+            {loading ? "…" : mode === "login" ? tr("loginBtn") : tr("createAccountBtn")}
           </Button>
 
           <div className="mt-4 text-center text-sm text-gray-500 space-y-2">
             {mode !== "login" ? (
-              <button onClick={() => setMode("login")} className="text-indigo-600 font-medium">
-                Back to login
-              </button>
+              <button onClick={() => setMode("login")} className="text-indigo-600 font-medium">{tr("backToLoginLink")}</button>
             ) : (
               <div className="flex items-center justify-center gap-3">
-                <button onClick={() => setMode("register_applicant")} className="text-indigo-600 font-medium">
-                  Register as Applicant
-                </button>
+                <button onClick={() => setMode("register_applicant")} className="text-indigo-600 font-medium">{tr("regAsApplicantLink")}</button>
                 <span className="text-gray-300">|</span>
-                <button onClick={() => setMode("register_recruiter")} className="text-indigo-600 font-medium">
-                  Register as Recruiter
-                </button>
+                <button onClick={() => setMode("register_recruiter")} className="text-indigo-600 font-medium">{tr("regAsRecruiterLink")}</button>
               </div>
             )}
           </div>

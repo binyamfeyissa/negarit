@@ -13,6 +13,7 @@ import { PostJobDialog } from "@/components/recruiter/post-job-dialog";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { AppStatus, Job, RecruiterProfile } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
+import { useLocale } from "@/lib/i18n";
 
 type RecruiterApplication = {
   id?: string;
@@ -155,6 +156,7 @@ function DetailLine({ label, value }: { label: string; value: string | number })
 
 export default function RecruiterDashboard() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [profile, setProfile] = useState<RecruiterProfile | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<RecruiterApplication[]>([]);
@@ -439,12 +441,12 @@ export default function RecruiterDashboard() {
       {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 shadow-sm">{error}</div> : null}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-        <StatCard title="Live jobs" value={profile?.activeJobs ?? totalJobs} subtitle="Open roles tracked in the backend" icon={<BriefcaseBusiness size={20} />} />
-        <StatCard title="Applicants" value={totalApplicants} subtitle="Total applicant count across loaded jobs" icon={<Users2 size={20} />} />
-        <StatCard title="Applications loaded" value={applicationsTracked} subtitle="Detailed application records retrieved" icon={<ClipboardList size={20} />} />
-        <StatCard title="Hires" value={profile?.totalHires ?? 0} subtitle="Successful placements on this account" icon={<CheckCircle2 size={20} />} />
-        <StatCard title="Avg applicants / job" value={avgApplicantsPerJob} subtitle="Applicant pressure per open role" icon={<Target size={20} />} />
-        <StatCard title="Avg match score" value={`${avgMatchScore}%`} subtitle="Mean match score across applications" icon={<TrendingUp size={20} />} />
+        <StatCard title={tr("rdLiveJobs")} value={profile?.activeJobs ?? totalJobs} subtitle="Open roles tracked in the backend" icon={<BriefcaseBusiness size={20} />} />
+        <StatCard title={tr("rdTotalApps")} value={totalApplicants} subtitle="Total applicant count across loaded jobs" icon={<Users2 size={20} />} />
+        <StatCard title={tr("rdTotalApps")} value={applicationsTracked} subtitle="Detailed application records retrieved" icon={<ClipboardList size={20} />} />
+        <StatCard title={tr("rdHires")} value={profile?.totalHires ?? 0} subtitle="Successful placements on this account" icon={<CheckCircle2 size={20} />} />
+        <StatCard title={tr("rdAvgPerJob")} value={avgApplicantsPerJob} subtitle="Applicant pressure per open role" icon={<Target size={20} />} />
+        <StatCard title={tr("rdAvgMatch")} value={`${avgMatchScore}%`} subtitle="Mean match score across applications" icon={<TrendingUp size={20} />} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
@@ -452,7 +454,7 @@ export default function RecruiterDashboard() {
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-lg text-slate-950">Application Pipeline</CardTitle>
+                <CardTitle className="text-lg text-slate-950">{tr("rdPipeline")}</CardTitle>
                 <CardDescription>Counts by status across the application records loaded into this dashboard.</CardDescription>
               </div>
               <Badge className="border-indigo-100 bg-indigo-50 text-indigo-700 hover:bg-indigo-50">{applicationsTracked} tracked</Badge>
@@ -575,7 +577,7 @@ export default function RecruiterDashboard() {
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-lg text-slate-950">Recent Applications</CardTitle>
+                <CardTitle className="text-lg text-slate-950">{tr("rdRecentApps")}</CardTitle>
                 <CardDescription>Most recent candidate activity across the jobs loaded into this dashboard.</CardDescription>
               </div>
               <Badge className="border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-50">Latest {recentApplications.length}</Badge>
@@ -617,7 +619,7 @@ export default function RecruiterDashboard() {
           <CardHeader className="border-b border-slate-100 pb-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-lg text-slate-950">Top Jobs</CardTitle>
+                <CardTitle className="text-lg text-slate-950">{tr("rdTopJobs")}</CardTitle>
                 <CardDescription>Ranked by applicant volume with average match context.</CardDescription>
               </div>
               <Badge className="border-indigo-100 bg-indigo-50 text-indigo-700 hover:bg-indigo-50">{topJobs.length} ranked</Badge>

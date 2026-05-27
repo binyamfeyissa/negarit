@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ApiError } from "@/lib/api/types";
+import { useLocale } from "@/lib/i18n";
 
 type AnyUser = Record<string, unknown>;
 
@@ -34,6 +35,7 @@ function userId(u: AnyUser): string | null {
 
 export default function UsersPage() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [q, setQ] = useState("");
   const [users, setUsers] = useState<AnyUser[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -72,12 +74,12 @@ export default function UsersPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold mb-1 border-gray-100">Users</h1>
+          <h1 className="text-2xl font-bold mb-1 border-gray-100">{tr("users")}</h1>
           <p className="text-gray-500 text-sm">Live users from the backend.</p>
         </div>
         <Button onClick={exportJson} variant="outline" className="flex items-center space-x-2 text-sm text-gray-700 bg-white border-gray-200">
           <Download size={16} />
-          <span>Export JSON</span>
+          <span>{tr("exportJSON")}</span>
         </Button>
       </div>
 
@@ -85,7 +87,7 @@ export default function UsersPage() {
 
       <Card className="shadow-sm border-gray-100 rounded-xl overflow-hidden">
         <div className="p-4 flex flex-row items-center justify-between bg-white border-b border-gray-50">
-          <h2 className="text-base font-bold">User Table</h2>
+          <h2 className="text-base font-bold">{tr("auAllUsers")}</h2>
           <div className="flex space-x-2">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2 h-4 w-4 text-gray-400" />
@@ -97,11 +99,11 @@ export default function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50 hover:bg-gray-50/50 border-gray-100">
-                <TableHead className="text-gray-500 font-medium text-xs">Name</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Email</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Role</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Status</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Created</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("auColName")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("auColEmail")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("auColRole")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("auColStatus")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("auColCreated")}</TableHead>
                 <TableHead className="text-right w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -128,7 +130,7 @@ export default function UsersPage() {
                             api.admin.updateUserStatus(id, { status: "SUSPENDED", note: "Suspended by admin" }).then(() => null);
                           }}
                         >
-                          Suspend
+                          {tr("auSuspend")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
@@ -137,7 +139,7 @@ export default function UsersPage() {
                             api.admin.updateUserStatus(id, { status: "ACTIVE", note: "Re-activated by admin" }).then(() => null);
                           }}
                         >
-                          Activate
+                          {tr("auActivate")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

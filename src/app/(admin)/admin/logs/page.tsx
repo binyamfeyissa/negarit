@@ -8,11 +8,13 @@ import { Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ApiError } from "@/lib/api/types";
+import { useLocale } from "@/lib/i18n";
 
 type AuditLog = Record<string, unknown>;
 
 export default function AdminLogsPage() {
   const { api } = useAuth();
+  const { tr } = useLocale();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -56,7 +58,7 @@ export default function AdminLogsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold mb-1">Audit Logs</h1>
+        <h1 className="text-2xl font-bold mb-1">{tr("auditLogs")}</h1>
         <p className="text-gray-500 text-sm">Activity trail from the backend.</p>
       </div>
 
@@ -69,14 +71,14 @@ export default function AdminLogsPage() {
             <Input
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="Filter by user ID"
+              placeholder={tr("alFilterUser")}
               className="pl-9 h-8 w-48 text-xs bg-white border-gray-200"
             />
           </div>
           <Input
             value={action}
             onChange={(e) => setAction(e.target.value)}
-            placeholder="Filter by action"
+            placeholder={tr("alFilterAction")}
             className="h-8 w-40 text-xs bg-white border-gray-200"
           />
           <Input
@@ -99,7 +101,7 @@ export default function AdminLogsPage() {
             onClick={() => { setUserId(""); setAction(""); setFrom(""); setTo(""); }}
             className="text-xs"
           >
-            Clear
+            {tr("alClearFilters")}
           </Button>
           <span className="ml-auto text-xs text-gray-400">{loading ? "Loading…" : `${logs.length} entries`}</span>
         </div>
@@ -107,11 +109,11 @@ export default function AdminLogsPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-50/50 hover:bg-gray-50/50 border-gray-100">
-                <TableHead className="text-gray-500 font-medium text-xs">Timestamp</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">User</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Action</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Target</TableHead>
-                <TableHead className="text-gray-500 font-medium text-xs">Details</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("alColTimestamp")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("alColUser")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("alColAction")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("alColTarget")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">{tr("alColDetails")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -131,7 +133,7 @@ export default function AdminLogsPage() {
               {logs.length === 0 && !loading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-sm text-gray-500 p-6 text-center">
-                    No log entries found.
+                    {tr("alNoLogs")}
                   </TableCell>
                 </TableRow>
               ) : null}

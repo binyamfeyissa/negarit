@@ -4,16 +4,18 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/auth-provider";
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n";
 
 export default function HelpCenterPage() {
   const { user } = useAuth();
+  const { tr } = useLocale();
   const role = user?.role ?? 'APPLICANT';
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-10">
       <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
         <CardHeader>
-          <CardTitle>Help Center</CardTitle>
+          <CardTitle>{tr("helpCenter")}</CardTitle>
           <CardDescription>Guides and quick tips for using the platform.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -53,7 +55,7 @@ export default function HelpCenterPage() {
           )}
 
           <div className="mt-6">
-            <Link href="/recruiter/settings" className="text-indigo-600 hover:underline">Open account settings</Link>
+            <Link href="/recruiter/settings" className="text-indigo-600 hover:underline">{tr("settingsNav")}</Link>
           </div>
         </CardContent>
       </Card>
