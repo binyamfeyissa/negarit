@@ -1,9 +1,15 @@
+// In the browser, route through the Next.js rewrite proxy (/negarit-api → backend)
+// so that the backend's Set-Cookie is delivered on localhost:3000 (first-party).
+// The server-side fallback uses the direct backend URL for SSR/build-time fetches.
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ??
-  "https://negarit-backend.onrender.com/api/v1";
+  typeof window !== "undefined"
+    ? "/negarit-api"
+    : (process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ?? "https://negarit-backend.onrender.com/api/v1");
 
-// Backend origin (strips /api/v1 suffix)
-export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/v1\/?$/, "");
+const _DIRECT_BACKEND = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "") ?? "https://negarit-backend.onrender.com/api/v1";
+
+// Backend origin (strips /api/v1 suffix) — always the real backend URL for file links
+export const BACKEND_ORIGIN = _DIRECT_BACKEND.replace(/\/api\/v1\/?$/, "");
 
 /**
  * Converts a backend upload path to a full URL.

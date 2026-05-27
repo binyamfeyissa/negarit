@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,15 +9,20 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { TokenPackage, PaymentHistoryItem, TokenBalance, ApiErrorDetail } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
-import { Coins, CreditCard, History, ExternalLink, Zap } from "lucide-react";
+import { Coins, CreditCard, History, ExternalLink, Zap, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useLocale } from "@/lib/i18n";
 
 const ETB_PER_TOKEN = 10;
 const CUSTOM_MIN_ETB = 100;
 
-export default function CandidateTokensPage() {
+type VerifyState = "idle" | "verifying" | "success" | "error";
+
+function CandidateTokensPage() {
   const { api } = useAuth();
   const { tr } = useLocale();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [balance, setBalance] = useState<TokenBalance | null>(null);
   const [packages, setPackages] = useState<TokenPackage[]>([]);
   const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
@@ -27,6 +33,47 @@ export default function CandidateTokensPage() {
 
   const [customEtb, setCustomEtb] = useState("");
   const [customInitiating, setCustomInitiating] = useState(false);
+
+  const [verifyState, setVerifyState] = useState<VerifyState>("idle");
+  const [verifyResult, setVerifyResult] = useState<{ tokensGranted: number; status: string } | null>(null);
+
+  async function loadData() {
+    try {
+      const [bal, pkgs, hist] = await Promise.all([
+        api.applicant.tokenBalance(),
+        api.payments.packages(),
+        api.payments.history(),
+      ]);
+      setBalance(bal);
+      setPackages(pkgs.packages ?? []);
+      setHistory(hist.payments ?? []);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Failed to load token data.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Verify payment when Chapa redirects back with ?txRef=
+  useEffect(() => {
+    const txRef = searchParams.get("txRef");
+    if (!txRef) return;
+
+    // Remove txRef from URL immediately so a refresh doesn't re-verify
+    router.replace("/candidate/tokens", { scroll: false });
+
+    setVerifyState("verifying");
+    api.payments.verify(txRef)
+      .then((result) => {
+        setVerifyResult({ tokensGranted: result.tokensGranted, status: result.status });
+        setVerifyState("success");
+        // Reload balance/history so the updated numbers are reflected
+        loadData();
+      })
+      .catch(() => {
+        setVerifyState("error");
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +171,28 @@ export default function CandidateTokensPage() {
         <h1 className="text-2xl font-bold text-slate-900">{tr("tokens")}</h1>
         <p className="text-sm text-slate-500 mt-1">{tr("cdTokensDesc")}</p>
       </div>
+
+      {/* Payment verification banner */}
+      {verifyState === "verifying" && (
+        <div className="flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+          <Loader2 size={16} className="shrink-0 animate-spin" />
+          <span className="font-medium">Verifying your payment…</span>
+        </div>
+      )}
+      {verifyState === "success" && verifyResult && (
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <CheckCircle size={16} className="shrink-0" />
+          <span className="font-medium">
+            Payment confirmed — <strong>{verifyResult.tokensGranted} tokens</strong> added to your balance.
+          </span>
+        </div>
+      )}
+      {verifyState === "error" && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <AlertCircle size={16} className="shrink-0" />
+          <span className="font-medium">Could not verify payment. If tokens are missing after a minute, contact support.</span>
+        </div>
+      )}
 
       {error ? (
         <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3 space-y-1">
@@ -284,5 +353,15 @@ export default function CandidateTokensPage() {
         </Card>
       ) : null}
     </div>
+  );
+}
+
+import { Suspense } from "react";
+
+export default function CandidateTokensPageWrapper() {
+  return (
+    <Suspense>
+      <CandidateTokensPage />
+    </Suspense>
   );
 }

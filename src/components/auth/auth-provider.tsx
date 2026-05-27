@@ -100,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 credentials: "include",
               });
               if (!res.ok) {
+                // Explicit auth rejection from server — session is gone.
                 applyAuth({ accessToken: null, user: null });
                 return null;
               }
@@ -113,7 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               applyAuth({ accessToken: null, user: null });
               return null;
             } catch {
-              applyAuth({ accessToken: null, user: null });
+              // Network error: don't clear auth so an offline user isn't logged out.
+              // The next successful API call will retry.
               return null;
             } finally {
               refreshingRef.current = null;
@@ -168,10 +170,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [api],
   );
 
-  // Hydrate from localStorage on mount
+  // Hydrate from localStorage on mount — the http client will refresh the
+  // access token on the first 401 it encounters (deduped via refreshingRef).
   useEffect(() => {
-    const initial = readStored();
-    applyAuth(initial);
+    applyAuth(readStored());
     setIsReady(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
