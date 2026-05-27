@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth/auth-provider";
-import type { Job, SkillGapResult, SkillGapAnalysis, MockInterviewResult } from "@/lib/api/types";
+import type { Job, SkillGapResult, SkillGapAnalysis, MockInterviewResult, MockInterviewQuestion } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
-import { Briefcase, MapPin, DollarSign, Calendar, Users, ArrowLeft, BrainCircuit, MessageSquare, Coins, CheckCircle2, XCircle, AlertTriangle, Lightbulb } from "lucide-react";
+import { Briefcase, MapPin, DollarSign, Calendar, Users, ArrowLeft, BrainCircuit, MessageSquare, Coins, CheckCircle2, XCircle, AlertTriangle, Lightbulb, CheckCircle, Circle } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/i18n";
 
@@ -120,6 +120,110 @@ function SkillGapCard({ result }: { result: SkillGapResult }) {
   );
 }
 
+function MockInterviewCard({
+  result,
+  answers,
+  revealed,
+  onSelect,
+  onReveal,
+  onReset,
+}: {
+  result: MockInterviewResult;
+  answers: Record<number, string>;
+  revealed: boolean;
+  onSelect: (qi: number, key: string) => void;
+  onReveal: () => void;
+  onReset: () => void;
+}) {
+  const questions = result.questions as MockInterviewQuestion[];
+  const answered = Object.keys(answers).length;
+  const score = revealed
+    ? questions.filter((q, i) => answers[i] === q.correct_answer).length
+    : 0;
+
+  return (
+    <Card className="rounded-3xl border-violet-100 shadow-sm bg-white">
+      <CardHeader className="border-b border-violet-50 pb-4">
+        <CardTitle className="text-base text-violet-900 flex items-center gap-2">
+          <MessageSquare size={16} /> Mock Interview — {result.jobTitle}
+          <Badge className="ml-auto bg-violet-50 text-violet-700 border-violet-100">
+            {result.tokensUsed} token{result.tokensUsed !== 1 ? "s" : ""} used
+          </Badge>
+        </CardTitle>
+        {revealed && (
+          <p className="text-sm text-violet-700 font-semibold mt-1">
+            Score: {score} / {questions.length}
+          </p>
+        )}
+      </CardHeader>
+      <CardContent className="p-6 space-y-8">
+        {questions.map((q, qi) => {
+          const chosen = answers[qi];
+          const isCorrect = revealed && chosen === q.correct_answer;
+          const isWrong = revealed && chosen && chosen !== q.correct_answer;
+          return (
+            <div key={qi} className="space-y-3">
+              <p className="text-sm font-semibold text-slate-800">
+                <span className="text-violet-500 mr-2">{qi + 1}.</span>
+                {q.question}
+              </p>
+              <div className="space-y-2">
+                {Object.entries(q.options).map(([key, text]) => {
+                  const isChosen = chosen === key;
+                  const isAnswer = q.correct_answer === key;
+                  let optClass = "border-slate-200 bg-slate-50 text-slate-700";
+                  if (revealed) {
+                    if (isAnswer) optClass = "border-emerald-300 bg-emerald-50 text-emerald-800 font-medium";
+                    else if (isChosen) optClass = "border-rose-300 bg-rose-50 text-rose-700 line-through";
+                  } else if (isChosen) {
+                    optClass = "border-violet-400 bg-violet-50 text-violet-800 font-medium";
+                  }
+                  return (
+                    <button
+                      key={key}
+                      disabled={revealed}
+                      onClick={() => onSelect(qi, key)}
+                      className={`w-full text-left flex items-start gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors ${optClass} ${!revealed ? "hover:border-violet-300 hover:bg-violet-50/50 cursor-pointer" : "cursor-default"}`}
+                    >
+                      <span className="shrink-0 font-bold w-4">{key}.</span>
+                      <span>{text}</span>
+                      {revealed && isAnswer && <CheckCircle size={14} className="ml-auto shrink-0 text-emerald-600 mt-0.5" />}
+                      {revealed && isChosen && !isAnswer && <XCircle size={14} className="ml-auto shrink-0 text-rose-500 mt-0.5" />}
+                    </button>
+                  );
+                })}
+              </div>
+              {revealed && isWrong && (
+                <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1.5">
+                  Correct answer: <strong>{q.correct_answer}</strong> — {q.options[q.correct_answer]}
+                </p>
+              )}
+            </div>
+          );
+        })}
+
+        <div className="flex gap-3 pt-2 border-t border-slate-100">
+          {!revealed ? (
+            <Button
+              onClick={onReveal}
+              disabled={answered === 0}
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+              size="sm"
+            >
+              <CheckCircle size={14} className="mr-1" />
+              Submit ({answered}/{questions.length} answered)
+            </Button>
+          ) : (
+            <Button onClick={onReset} variant="outline" size="sm" className="border-violet-200 text-violet-700">
+              Try Again
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function CandidateJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { api } = useAuth();
@@ -136,6 +240,8 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
 
   const [mockInterview, setMockInterview] = useState<MockInterviewResult | null>(null);
   const [mockInterviewLoading, setMockInterviewLoading] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
+  const [quizRevealed, setQuizRevealed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -185,6 +291,8 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
 
   async function handleMockInterview() {
     setMockInterview(null);
+    setQuizAnswers({});
+    setQuizRevealed(false);
     setMockInterviewLoading(true);
     setError(null);
     try {
@@ -296,21 +404,14 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
       {skillGap ? <SkillGapCard result={skillGap} /> : null}
 
       {mockInterview ? (
-        <Card className="rounded-3xl border-violet-100 shadow-sm bg-white">
-          <CardHeader className="border-b border-violet-50 pb-4">
-            <CardTitle className="text-base text-violet-900 flex items-center gap-2">
-              <MessageSquare size={16} /> Mock Interview Questions
-              <Badge className="ml-auto bg-violet-50 text-violet-700 border-violet-100">{mockInterview.tokensUsed} token{mockInterview.tokensUsed !== 1 ? "s" : ""} used</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <ol className="space-y-3 list-decimal list-inside">
-              {mockInterview.questions.map((q, i) => (
-                <li key={i} className="text-sm text-slate-700 leading-relaxed">{q}</li>
-              ))}
-            </ol>
-          </CardContent>
-        </Card>
+        <MockInterviewCard
+          result={mockInterview}
+          answers={quizAnswers}
+          revealed={quizRevealed}
+          onSelect={(qi, key) => setQuizAnswers((prev) => ({ ...prev, [qi]: key }))}
+          onReveal={() => setQuizRevealed(true)}
+          onReset={() => { setQuizAnswers({}); setQuizRevealed(false); }}
+        />
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_350px]">

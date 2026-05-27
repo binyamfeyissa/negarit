@@ -171,11 +171,18 @@ export type SkillGapResult = {
   tokensUsed: number;
 };
 
+export type MockInterviewQuestion = {
+  question: string;
+  options: Record<string, string>;
+  correct_answer: string;
+};
+
 export type MockInterviewResult = {
   jobId: string;
   jobTitle: string;
-  questions: string[];
+  questions: MockInterviewQuestion[];
   tokensUsed: number;
+  source?: string;
 };
 
 export type McqsResult = {
