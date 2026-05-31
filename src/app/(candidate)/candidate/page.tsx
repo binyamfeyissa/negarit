@@ -138,7 +138,7 @@ export default function CandidateDashboardPage() {
         <div className="relative space-y-5 p-8 md:p-10">
           <div className="space-y-2">
             <p className="text-sm uppercase tracking-[0.25em] text-slate-300/80">{tr("cdWelcome")},</p>
-            <h1 className="text-3xl font-bold tracking-tight md:text-5xl">{profile?.full_name ?? "Candidate"}</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl md:text-5xl">{profile?.full_name ?? "Candidate"}</h1>
             <p className="max-w-2xl text-sm leading-7 text-slate-200 md:text-base">
               {totalApplications > 0
                 ? `${totalApplications} application${totalApplications !== 1 ? "s" : ""} submitted · ${avgMatchScore}% avg match · ${interviewCount} interview${interviewCount !== 1 ? "s" : ""}`
@@ -148,7 +148,7 @@ export default function CandidateDashboardPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Badge className="border-emerald-400/20 bg-emerald-400/15 text-emerald-100 hover:bg-emerald-400/15">
-              {completeness}% profile complete
+              {completeness}% {tr("cdProfileComplete")}
             </Badge>
             {profile?.tokens != null && (
               <Badge className="border-amber-400/20 bg-amber-400/15 text-amber-100 hover:bg-amber-400/15 flex items-center gap-1">
@@ -171,24 +171,24 @@ export default function CandidateDashboardPage() {
       {success && <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div>}
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title={tr("cdTotalApps")} value={totalApplications} subtitle="Total submitted" icon={<Briefcase size={20} />} />
-        <StatCard title={tr("cdAvgMatch")} value={`${avgMatchScore}%`} subtitle="Across all applications" icon={<Target size={20} />} />
-        <StatCard title={tr("cdActiveInterviews")} value={interviewCount} subtitle="Active interview rounds" icon={<Clock size={20} />} />
-        <StatCard title={tr("cdOffers")} value={offeredCount} subtitle="Job offers received" icon={<CheckCircle2 size={20} />} />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <StatCard title={tr("cdTotalApps")} value={totalApplications} subtitle={tr("cdTotalSubmitted")} icon={<Briefcase size={20} />} />
+        <StatCard title={tr("cdAvgMatch")} value={`${avgMatchScore}%`} subtitle={tr("cdAcrossApps")} icon={<Target size={20} />} />
+        <StatCard title={tr("cdActiveInterviews")} value={interviewCount} subtitle={tr("cdActiveRounds")} icon={<Clock size={20} />} />
+        <StatCard title={tr("cdOffers")} value={offeredCount} subtitle={tr("cdOffersReceived")} icon={<CheckCircle2 size={20} />} />
       </div>
 
       {/* Profile completeness + resume */}
-      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.35fr_0.85fr]">
         <Card className="rounded-3xl border-slate-200 shadow-sm bg-white/95">
           <CardHeader className="border-b border-slate-100 pb-4">
             <CardTitle className="text-lg text-slate-950">{tr("cdProfileCompleteness")}</CardTitle>
-            <CardDescription>Complete your profile to get better job matches</CardDescription>
+            <CardDescription>{tr("cdProfileDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="p-6 space-y-5">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Overall completeness</span>
+                <span className="text-slate-600">{tr("cdOverallCompleteness")}</span>
                 <span className="font-bold text-slate-900">{completeness}%</span>
               </div>
               <Progress value={completeness} className="h-3" />
@@ -292,7 +292,7 @@ export default function CandidateDashboardPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-lg text-slate-950">{tr("cdRecentApps")}</CardTitle>
-                <CardDescription>Latest activity across your job applications</CardDescription>
+                <CardDescription>{tr("cdLatestActivity")}</CardDescription>
               </div>
               <div className="flex items-center gap-2">
                 <Badge className="border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-50">{totalApplications} total</Badge>
@@ -337,7 +337,7 @@ export default function CandidateDashboardPage() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <CardTitle className="text-lg text-slate-950">{tr("cdTopMatches")}</CardTitle>
-                <CardDescription>Best scoring applications</CardDescription>
+                <CardDescription>{tr("cdBestScoring")}</CardDescription>
               </div>
               <Badge className="border-emerald-100 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">{topMatches.length} ranked</Badge>
             </div>

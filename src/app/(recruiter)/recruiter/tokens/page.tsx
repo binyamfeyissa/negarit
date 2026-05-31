@@ -1,29 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/auth-provider";
-import type { TokenPackage, PaymentHistoryItem, TokenBalance, ApiErrorDetail } from "@/lib/api/types";
+import type { TokenPackage, PaymentHistoryItem, ApiErrorDetail } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
-import { Coins, CreditCard, History, ExternalLink, Zap, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Coins, CreditCard, History, ExternalLink, Zap, CheckCircle, AlertCircle, Loader2, Briefcase } from "lucide-react";
 import { useLocale } from "@/lib/i18n";
 
 const ETB_PER_TOKEN = 10;
 const CUSTOM_MIN_ETB = 100;
+const TOKENS_PER_JOB_POST = 20;
 
 type VerifyState = "idle" | "verifying" | "success" | "error";
 
-function CandidateTokensPage() {
+function RecruiterTokensPage() {
   const { api } = useAuth();
   const { tr } = useLocale();
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const [balance, setBalance] = useState<TokenBalance | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
   const [packages, setPackages] = useState<TokenPackage[]>([]);
   const [history, setHistory] = useState<PaymentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,16 +36,16 @@ function CandidateTokensPage() {
   const [customInitiating, setCustomInitiating] = useState(false);
 
   const [verifyState, setVerifyState] = useState<VerifyState>("idle");
-  const [verifyResult, setVerifyResult] = useState<{ tokensGranted: number; status: string } | null>(null);
+  const [verifyResult, setVerifyResult] = useState<{ tokensGranted: number } | null>(null);
 
   async function loadData() {
     try {
-      const [bal, pkgs, hist] = await Promise.all([
-        api.applicant.tokenBalance(),
+      const [profile, pkgs, hist] = await Promise.all([
+        api.recruiter.me(),
         api.payments.packages(),
         api.payments.history(),
       ]);
-      setBalance(bal);
+      setBalance(profile.tokens ?? 0);
       setPackages(pkgs.packages ?? []);
       setHistory(hist.payments ?? []);
     } catch (e) {
@@ -54,38 +55,33 @@ function CandidateTokensPage() {
     }
   }
 
-  // Verify payment when Chapa redirects back with ?txRef=
+  // Verify Chapa redirect
   useEffect(() => {
     const txRef = searchParams.get("txRef");
     if (!txRef) return;
 
-    // Remove txRef from URL immediately so a refresh doesn't re-verify
-    router.replace("/candidate/tokens", { scroll: false });
-
+    router.replace("/recruiter/tokens", { scroll: false });
     setVerifyState("verifying");
     api.payments.verify(txRef)
       .then((result) => {
-        setVerifyResult({ tokensGranted: result.tokensGranted, status: result.status });
+        setVerifyResult({ tokensGranted: result.tokensGranted });
         setVerifyState("success");
-        // Reload balance/history so the updated numbers are reflected
         loadData();
       })
-      .catch(() => {
-        setVerifyState("error");
-      });
+      .catch(() => setVerifyState("error"));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [bal, pkgs, hist] = await Promise.all([
-          api.applicant.tokenBalance(),
+        const [profile, pkgs, hist] = await Promise.all([
+          api.recruiter.me(),
           api.payments.packages(),
           api.payments.history(),
         ]);
         if (cancelled) return;
-        setBalance(bal);
+        setBalance(profile.tokens ?? 0);
         setPackages(pkgs.packages ?? []);
         setHistory(hist.payments ?? []);
       } catch (e) {
@@ -109,19 +105,14 @@ function CandidateTokensPage() {
     }
   }
 
-  function clearError() {
-    setError(null);
-    setErrorDetails(null);
-  }
+  function clearError() { setError(null); setErrorDetails(null); }
 
   async function handleBuy(packageId: string) {
     setInitiating(packageId);
     clearError();
     try {
       const result = await api.payments.initiate({ packageId });
-      if (result.checkoutUrl) {
-        window.open(result.checkoutUrl, "_blank", "noopener,noreferrer");
-      }
+      if (result.checkoutUrl) window.open(result.checkoutUrl, "_blank", "noopener,noreferrer");
     } catch (e) {
       setApiError(e);
     } finally {
@@ -140,9 +131,7 @@ function CandidateTokensPage() {
     clearError();
     try {
       const result = await api.payments.initiate({ customEtb: etb });
-      if (result.checkoutUrl) {
-        window.open(result.checkoutUrl, "_blank", "noopener,noreferrer");
-      }
+      if (result.checkoutUrl) window.open(result.checkoutUrl, "_blank", "noopener,noreferrer");
       setCustomEtb("");
     } catch (e) {
       setApiError(e);
@@ -157,22 +146,18 @@ function CandidateTokensPage() {
     return "bg-amber-50 text-amber-700 border-amber-100";
   }
 
-  function tokenTypeColor(type: string) {
-    if (type?.startsWith("CREDIT")) return "bg-emerald-50 text-emerald-700 border-emerald-100";
-    return "bg-rose-50 text-rose-700 border-rose-100";
-  }
-
   const customEtbNum = parseFloat(customEtb) || 0;
   const customTokensPreview = Math.floor(customEtbNum / ETB_PER_TOKEN);
+  const jobPostsAvailable = balance != null ? Math.floor(balance / TOKENS_PER_JOB_POST) : null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{tr("tokens")}</h1>
-        <p className="text-sm text-slate-500 mt-1">{tr("cdTokensDesc")}</p>
+        <h1 className="text-2xl font-bold text-slate-900">Tokens</h1>
+        <p className="text-sm text-slate-500 mt-1">{tr("tokJobCost")}</p>
       </div>
 
-      {/* Payment verification banner */}
+      {/* Verification banners */}
       {verifyState === "verifying" && (
         <div className="flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
           <Loader2 size={16} className="shrink-0 animate-spin" />
@@ -182,9 +167,7 @@ function CandidateTokensPage() {
       {verifyState === "success" && verifyResult && (
         <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           <CheckCircle size={16} className="shrink-0" />
-          <span className="font-medium">
-            {tr("tokPayConfirmed")} — <strong>{verifyResult.tokensGranted} tokens</strong> {tr("tokTokensAdded")}
-          </span>
+          <span className="font-medium">{tr("tokPayConfirmed")} — <strong>{verifyResult.tokensGranted} tokens</strong> {tr("tokTokensAdded")}</span>
         </div>
       )}
       {verifyState === "error" && (
@@ -194,7 +177,7 @@ function CandidateTokensPage() {
         </div>
       )}
 
-      {error ? (
+      {error && (
         <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3 space-y-1">
           <p className="font-medium">{error}</p>
           {errorDetails?.map((d, i) => (
@@ -204,54 +187,42 @@ function CandidateTokensPage() {
             </p>
           ))}
         </div>
-      ) : null}
+      )}
 
       {/* Balance card */}
-      <Card className="rounded-3xl border-amber-100 shadow-sm bg-amber-50/60">
-        <CardContent className="p-6 flex items-center gap-4">
-          <div className="h-14 w-14 rounded-2xl bg-amber-100 flex items-center justify-center">
-            <Coins size={28} className="text-amber-600" />
-          </div>
-          <div>
-            <p className="text-sm text-amber-700 font-medium">{tr("ctBalance")}</p>
-            <p className="text-4xl font-bold text-amber-900">{loading ? "—" : (balance?.tokens ?? 0)}</p>
-            <p className="text-xs text-amber-600 mt-1">tokens available · 1 token = {ETB_PER_TOKEN} ETB</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Token history */}
-      {balance?.history && balance.history.length > 0 ? (
-        <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
-          <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-base flex items-center gap-2"><History size={16} /> {tr("ctHistory")}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-slate-100">
-              {balance.history.map((entry, i) => (
-                <div key={i} className="flex items-center justify-between gap-4 px-6 py-3">
-                  <div className="flex items-center gap-3">
-                    <Badge className={tokenTypeColor(entry.type)}>{entry.type}</Badge>
-                    <span className="text-sm text-slate-600">{entry.description ?? "—"}</span>
-                  </div>
-                  <div className="text-right">
-                    <p className={`text-sm font-semibold ${entry.type?.startsWith("CREDIT") ? "text-emerald-700" : "text-rose-700"}`}>
-                      {entry.type?.startsWith("CREDIT") ? "+" : "-"}{Math.abs(entry.amount)}
-                    </p>
-                    <p className="text-xs text-slate-400">{entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : ""}</p>
-                  </div>
-                </div>
-              ))}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card className="rounded-3xl border-amber-100 shadow-sm bg-amber-50/60">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-amber-100 flex items-center justify-center">
+              <Coins size={28} className="text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm text-amber-700 font-medium">Current Balance</p>
+              <p className="text-4xl font-bold text-amber-900">{loading ? "—" : (balance ?? 0)}</p>
+              <p className="text-xs text-amber-600 mt-1">tokens · 1 token = {ETB_PER_TOKEN} ETB</p>
             </div>
           </CardContent>
         </Card>
-      ) : null}
+
+        <Card className="rounded-3xl border-indigo-100 shadow-sm bg-indigo-50/60">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="h-14 w-14 rounded-2xl bg-indigo-100 flex items-center justify-center">
+              <Briefcase size={28} className="text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-sm text-indigo-700 font-medium">{tr("tokJobPostsAvailable")}</p>
+              <p className="text-4xl font-bold text-indigo-900">{loading ? "—" : (jobPostsAvailable ?? 0)}</p>
+              <p className="text-xs text-indigo-600 mt-1">{TOKENS_PER_JOB_POST} {tr("tokPerJobPost")}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Packages */}
       <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
         <CardHeader className="border-b border-slate-100 pb-4">
-          <CardTitle className="text-base flex items-center gap-2"><CreditCard size={16} /> {tr("ctBuyTokens")}</CardTitle>
-          <CardDescription>Purchase a token package to unlock AI features. Powered by Chapa.</CardDescription>
+          <CardTitle className="text-base flex items-center gap-2"><CreditCard size={16} /> Buy Tokens</CardTitle>
+          <CardDescription>Purchase tokens to post jobs. Powered by Chapa.</CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
           {packages.length === 0 && !loading ? (
@@ -262,7 +233,10 @@ function CandidateTokensPage() {
                 <div key={pkg.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5 flex flex-col gap-4">
                   <div>
                     <p className="font-semibold text-slate-900">{pkg.name}</p>
-                    {pkg.description ? <p className="text-xs text-slate-500 mt-1">{pkg.description}</p> : null}
+                    {pkg.description && <p className="text-xs text-slate-500 mt-1">{pkg.description}</p>}
+                    <p className="text-xs text-indigo-600 mt-1 font-medium">
+                      = {Math.floor(pkg.tokens / TOKENS_PER_JOB_POST)} job post{Math.floor(pkg.tokens / TOKENS_PER_JOB_POST) !== 1 ? "s" : ""}
+                    </p>
                   </div>
                   <div className="flex items-end justify-between gap-2">
                     <div>
@@ -283,7 +257,7 @@ function CandidateTokensPage() {
                     size="sm"
                   >
                     <ExternalLink size={14} className="mr-1" />
-                    {initiating === pkg.id ? tr("loadingText") : tr("ctPurchase")}
+                    {initiating === pkg.id ? "Loading…" : "Buy Now"}
                   </Button>
                 </div>
               ))}
@@ -294,7 +268,7 @@ function CandidateTokensPage() {
           <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/40 p-5">
             <div className="flex items-center gap-2 mb-3">
               <Zap size={15} className="text-indigo-500" />
-              <p className="text-sm font-semibold text-indigo-800">{tr("ctCustomAmount")}</p>
+              <p className="text-sm font-semibold text-indigo-800">Custom Amount</p>
               <span className="text-xs text-indigo-400 ml-auto">1 token = {ETB_PER_TOKEN} ETB</span>
             </div>
             <div className="flex gap-3 items-end">
@@ -324,7 +298,7 @@ function CandidateTokensPage() {
                 size="sm"
               >
                 <ExternalLink size={14} className="mr-1" />
-                {customInitiating ? tr("loadingText") : tr("ctPurchase")}
+                {customInitiating ? "Loading…" : "Buy Now"}
               </Button>
             </div>
           </div>
@@ -332,10 +306,10 @@ function CandidateTokensPage() {
       </Card>
 
       {/* Payment history */}
-      {history.length > 0 ? (
+      {history.length > 0 && (
         <Card className="rounded-3xl border-slate-200 shadow-sm bg-white">
           <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-base flex items-center gap-2"><History size={16} /> {tr("ctPaymentHistory")}</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2"><History size={16} /> Payment History</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">
@@ -354,17 +328,15 @@ function CandidateTokensPage() {
             </div>
           </CardContent>
         </Card>
-      ) : null}
+      )}
     </div>
   );
 }
 
-import { Suspense } from "react";
-
-export default function CandidateTokensPageWrapper() {
+export default function RecruiterTokensPageWrapper() {
   return (
     <Suspense>
-      <CandidateTokensPage />
+      <RecruiterTokensPage />
     </Suspense>
   );
 }

@@ -58,7 +58,7 @@ const articles = [
     category: "salary" as Category,
     image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=600&h=400&fit=crop",
     minutes: 4,
-    titleKey: "2025 Salary Guide: What Ethiopia's Top Roles Pay",
+    titleKey: "2026 Salary Guide: What Ethiopia's Top Roles Pay",
     descKey: "Benchmark your salary against real market data for software engineers, finance professionals, marketers, and more.",
     featured: false,
   },

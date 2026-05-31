@@ -350,7 +350,16 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
         <div className="relative space-y-6 p-8 md:p-10">
           <div>
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{job.title}</h1>
-            <p className="mt-2 text-lg text-slate-200">{job.recruiter?.companyName ?? "Company"}</p>
+            {job.recruiter?.id ? (
+              <Link
+                href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(job.recruiter.companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
+                className="mt-2 inline-block text-lg text-slate-300 hover:text-white hover:underline transition-colors"
+              >
+                {job.recruiter.companyName ?? "Company"}
+              </Link>
+            ) : (
+              <p className="mt-2 text-lg text-slate-200">{job.recruiter?.companyName ?? "Company"}</p>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -481,25 +490,49 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
           </Card>
 
           <Card className="rounded-3xl border-slate-200 shadow-sm bg-slate-50/95">
-            <CardHeader className="pb-4">
+            <CardHeader className="pb-2">
               <CardTitle className="text-base text-slate-950">{tr("cjCompany")}</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-3 text-sm">
               <div>
-                <p className="text-slate-500">Name</p>
-                <p className="font-semibold text-slate-900">{job.recruiter?.companyName ?? "—"}</p>
+                <p className="text-slate-500 text-xs">Name</p>
+                {job.recruiter?.id ? (
+                  <Link
+                    href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(job.recruiter.companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
+                    className="font-semibold text-indigo-700 hover:underline"
+                  >
+                    {job.recruiter.companyName ?? "—"}
+                  </Link>
+                ) : (
+                  <p className="font-semibold text-slate-900">{job.recruiter?.companyName ?? "—"}</p>
+                )}
               </div>
               {job.recruiter?.industry && (
                 <div>
-                  <p className="text-slate-500">Industry</p>
+                  <p className="text-slate-500 text-xs">Industry</p>
                   <p className="font-semibold text-slate-900">{job.recruiter.industry}</p>
                 </div>
               )}
               {job.recruiter?.website && (
                 <div>
-                  <p className="text-slate-500">Website</p>
-                  <p className="font-semibold text-slate-900 truncate">{job.recruiter.website}</p>
+                  <p className="text-slate-500 text-xs">Website</p>
+                  <a
+                    href={job.recruiter.website.startsWith("http") ? job.recruiter.website : `https://${job.recruiter.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-indigo-600 hover:underline truncate block"
+                  >
+                    {job.recruiter.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                  </a>
                 </div>
+              )}
+              {job.recruiter?.id && (
+                <Link
+                  href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(job.recruiter.companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
+                  className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
+                >
+                  <Briefcase size={13} /> {tr("compViewAllJobs")}
+                </Link>
               )}
             </CardContent>
           </Card>

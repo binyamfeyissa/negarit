@@ -65,32 +65,41 @@ function MatchCircle({ score }: { score: number | null }) {
   const color = score != null ? matchColor(pct) : "#334155";
   const label = score != null ? matchLabel(pct) : "ANALYZING";
   return (
-    <div className="flex flex-col items-center justify-center gap-2 bg-slate-950 rounded-2xl px-5 py-4 w-36 shrink-0 self-stretch">
-      <svg width="90" height="90" viewBox="0 0 90 90">
-        <circle cx="45" cy="45" r={r} fill="none" stroke="#1e293b" strokeWidth="7" />
-        <circle
-          cx="45" cy="45" r={r} fill="none" stroke={color} strokeWidth="7"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          transform="rotate(-90 45 45)" strokeLinecap="round"
-        />
-        {score != null ? (
-          <text x="45" y="49" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="20" fontWeight="700" fontFamily="system-ui">
-            {pct}%
-          </text>
-        ) : (
-          <text x="45" y="49" textAnchor="middle" dominantBaseline="middle" fill="#475569" fontSize="24" fontWeight="700" fontFamily="system-ui">
-            —
-          </text>
-        )}
-      </svg>
-      <p className="text-[11px] font-bold text-white text-center leading-tight tracking-wide">{label}</p>
-    </div>
+    <>
+      {/* Mobile: compact badge */}
+      <div className="sm:hidden flex flex-col items-center justify-center gap-0.5 bg-slate-950 rounded-xl px-2 py-2 w-14 shrink-0 self-stretch">
+        <span className="text-xs font-bold text-white">{score != null ? `${pct}%` : "—"}</span>
+        <span className="text-[8px] text-slate-400 text-center leading-tight tracking-wide">MATCH</span>
+      </div>
+      {/* Desktop: full circle panel */}
+      <div className="hidden sm:flex flex-col items-center justify-center gap-2 bg-slate-950 rounded-2xl px-5 py-4 w-36 shrink-0 self-stretch">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle cx="45" cy="45" r={r} fill="none" stroke="#1e293b" strokeWidth="7" />
+          <circle
+            cx="45" cy="45" r={r} fill="none" stroke={color} strokeWidth="7"
+            strokeDasharray={circ} strokeDashoffset={offset}
+            transform="rotate(-90 45 45)" strokeLinecap="round"
+          />
+          {score != null ? (
+            <text x="45" y="49" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="20" fontWeight="700" fontFamily="system-ui">
+              {pct}%
+            </text>
+          ) : (
+            <text x="45" y="49" textAnchor="middle" dominantBaseline="middle" fill="#475569" fontSize="24" fontWeight="700" fontFamily="system-ui">
+              —
+            </text>
+          )}
+        </svg>
+        <p className="text-[11px] font-bold text-white text-center leading-tight tracking-wide">{label}</p>
+      </div>
+    </>
   );
 }
 
 // ── job card ──────────────────────────────────────────────────────────────────
 
 function JobCard({ job, appliedIds }: { job: Job; appliedIds: Set<string> }) {
+  const { tr } = useLocale();
   const salary = formatSalary(job.salaryMin, job.salaryMax);
   const posted = timeAgo(job.postedAt);
   const isApplied = appliedIds.has(job.id);
@@ -102,7 +111,7 @@ function JobCard({ job, appliedIds }: { job: Job; appliedIds: Set<string> }) {
       className="flex gap-0 rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-indigo-300 hover:shadow-md transition group"
     >
       {/* Main content */}
-      <div className="flex-1 p-5 space-y-3">
+      <div className="flex-1 p-3 sm:p-5 space-y-2 sm:space-y-3 min-w-0">
         {/* top row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -114,14 +123,22 @@ function JobCard({ job, appliedIds }: { job: Job; appliedIds: Set<string> }) {
               <div className="flex items-center gap-2 flex-wrap">
                 {posted && <span className="text-xs text-slate-400">{posted}</span>}
                 {(job.applicantCount ?? 0) < 25 && (
-                  <span className="text-xs text-emerald-600 font-medium">· Be an early applicant</span>
+                  <span className="text-xs text-emerald-600 font-medium">· {tr("cjEarlyApplicant")}</span>
                 )}
               </div>
-              <h3 className="text-lg font-bold text-slate-950 leading-tight mt-0.5 group-hover:text-indigo-700 transition">
+              <h3 className="text-base sm:text-lg font-bold text-slate-950 leading-tight mt-0.5 group-hover:text-indigo-700 transition">
                 {job.title}
               </h3>
               <p className="text-sm text-slate-500 mt-0.5">
-                {job.recruiter?.companyName ?? "—"}
+                {job.recruiter?.id ? (
+                  <Link
+                    href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(job.recruiter.companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="hover:text-indigo-600 hover:underline transition-colors"
+                  >
+                    {job.recruiter.companyName}
+                  </Link>
+                ) : (job.recruiter?.companyName ?? "—")}
                 {job.category && <span className="text-slate-400"> · {job.category}</span>}
               </p>
             </div>
@@ -133,7 +150,7 @@ function JobCard({ job, appliedIds }: { job: Job; appliedIds: Set<string> }) {
         </div>
 
         {/* meta row */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-slate-600">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm text-slate-600">
           {job.location && (
             <span className="flex items-center gap-1.5"><MapPin size={13} className="text-slate-400 shrink-0" />{job.location}</span>
           )}
@@ -233,10 +250,10 @@ export default function CandidateJobsPage() {
     <div className="max-w-5xl mx-auto pb-10 space-y-0">
       {/* Page header */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-100 px-1 pb-0">
-        {/* Title + tabs */}
-        <div className="flex items-center gap-6 pt-4 pb-0">
-          <h1 className="text-xl font-extrabold tracking-tight text-slate-950 uppercase">Jobs</h1>
-          <nav className="flex items-center gap-1">
+        {/* Title + tabs + search */}
+        <div className="flex flex-wrap items-center gap-2 pt-3 pb-0">
+          <h1 className="text-xl font-extrabold tracking-tight text-slate-950 uppercase shrink-0">Jobs</h1>
+          <nav className="flex items-center gap-0.5">
             {(
               [
                 { id: "recommended", label: tr("cjRecommended"), count: recommended.length },
@@ -246,7 +263,7 @@ export default function CandidateJobsPage() {
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
                   tab === id
                     ? "border-slate-950 text-slate-950"
                     : "border-transparent text-slate-500 hover:text-slate-700"
@@ -262,8 +279,8 @@ export default function CandidateJobsPage() {
             ))}
           </nav>
 
-          {/* Search */}
-          <div className="ml-auto relative w-64">
+          {/* Search — full width on mobile, fixed on desktop */}
+          <div className="ml-auto relative w-full sm:w-56">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 pointer-events-none" />
             <Input
               placeholder={tr("cjSearchPlaceholder")}
@@ -275,7 +292,7 @@ export default function CandidateJobsPage() {
         </div>
 
         {/* Filter chips */}
-        <div className="flex items-center gap-2 py-3 overflow-x-auto">
+        <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-none">
           {TYPE_FILTERS.map((t) => (
             <button
               key={t}

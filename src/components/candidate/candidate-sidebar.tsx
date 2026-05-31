@@ -2,15 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, User, Settings, HelpCircle, Coins } from 'lucide-react';
+import { Home, Briefcase, User, Settings, HelpCircle, Coins, ClipboardList } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useLocale } from '@/lib/i18n';
+import { useAuth } from '@/components/auth/auth-provider';
+import { useEffect, useState } from 'react';
 
 function classNames(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ');
 }
 
-const linkHrefs = ['/candidate','/candidate/jobs','/candidate/profile','/candidate/tokens','/candidate/settings','/candidate/help'];
+const linkHrefs = ['/candidate','/candidate/jobs','/candidate/applications','/candidate/profile','/candidate/tokens','/candidate/settings','/candidate/help'];
 
 function resolveActive(pathname: string) {
   let active = '';
@@ -23,8 +25,16 @@ function resolveActive(pathname: string) {
 
 export function CandidateSidebarLinks() {
   const pathname = usePathname();
-  const { tr } = useLocale();
+  const { tr, } = useLocale();
+  const { api } = useAuth();
   const activeHref = resolveActive(pathname);
+  const [completeness, setCompleteness] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.applicant.me()
+      .then((p) => setCompleteness(p.completeness ?? 0))
+      .catch(() => setCompleteness(null));
+  }, [api]);
 
   const LinkItem = ({ href, children, icon }: { href: string; children: React.ReactNode; icon: React.ReactNode }) => {
     const active = href === activeHref;
@@ -45,6 +55,7 @@ export function CandidateSidebarLinks() {
           <nav className="space-y-1">
             <LinkItem href="/candidate" icon={<Home size={18} />}>{tr("dashboard")}</LinkItem>
             <LinkItem href="/candidate/jobs" icon={<Briefcase size={18} />}>{tr("jobs")}</LinkItem>
+            <LinkItem href="/candidate/applications" icon={<ClipboardList size={18} />}>{tr("applications")}</LinkItem>
             <LinkItem href="/candidate/profile" icon={<User size={18} />}>{tr("profile")}</LinkItem>
             <LinkItem href="/candidate/tokens" icon={<Coins size={18} />}>{tr("tokens")}</LinkItem>
           </nav>
@@ -57,17 +68,20 @@ export function CandidateSidebarLinks() {
           </nav>
         </div>
       </div>
-      <div className="px-4 pb-6 mt-auto">
-        <div className="bg-linear-to-br from-emerald-600 to-teal-600 rounded-xl p-4 text-white text-center shadow-sm">
-          <h4 className="font-bold text-sm mb-1">{tr("completeProfile")}</h4>
-          <p className="text-xs text-emerald-100 mb-4 leading-tight">{tr("increaseMatchScore")}</p>
-          <Link href="/candidate/profile" className="inline-block w-full">
-            <Button className="w-full bg-white text-emerald-600 hover:bg-emerald-50 font-bold rounded-lg shadow-sm">
-              {tr("finishProfile")}
-            </Button>
-          </Link>
+      {completeness !== null && completeness < 100 && (
+        <div className="px-4 pb-6 mt-auto">
+          <div className="bg-linear-to-br from-emerald-600 to-teal-600 rounded-xl p-4 text-white text-center shadow-sm">
+            <h4 className="font-bold text-sm mb-1">{tr("completeProfile")}</h4>
+            <p className="text-xs text-emerald-100 mb-1 leading-tight">{tr("increaseMatchScore")}</p>
+            <p className="text-xs text-emerald-200 font-semibold mb-3">{completeness}% complete</p>
+            <Link href="/candidate/profile" className="inline-block w-full">
+              <Button className="w-full bg-white text-emerald-600 hover:bg-emerald-50 font-bold rounded-lg shadow-sm">
+                {tr("finishProfile")}
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, User, Settings, HelpCircle, CreditCard } from 'lucide-react';
+import { Home, Briefcase, User, Settings, HelpCircle, Coins } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useLocale } from '@/lib/i18n';
 
@@ -10,7 +10,7 @@ function classNames(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ');
 }
 
-const linkHrefs = ['/recruiter','/recruiter/jobs','/recruiter/profile','/recruiter/settings','/recruiter/help'];
+const linkHrefs = ['/recruiter','/recruiter/jobs','/recruiter/profile','/recruiter/settings','/recruiter/tokens','/recruiter/help'];
 
 function resolveActive(pathname: string) {
   let active = '';
@@ -52,18 +52,21 @@ export function RecruiterSidebarLinks() {
           <h3 className="text-xs font-medium text-gray-400 mb-4 px-2">{tr("settingsAndSupport")}</h3>
           <nav className="space-y-1">
             <LinkItem href="/recruiter/settings" icon={<Settings size={18} />}>{tr("settingsNav")}</LinkItem>
-            <LinkItem href="#" icon={<CreditCard size={18} />}>{tr("subscription")}</LinkItem>
+            <LinkItem href="/recruiter/tokens" icon={<Coins size={18} />}>{tr("tokens")}</LinkItem>
             <LinkItem href="/recruiter/help" icon={<HelpCircle size={18} />}>{tr("helpCenter")}</LinkItem>
           </nav>
         </div>
       </div>
       <div className="px-4 pb-6 mt-auto">
-        <div className="bg-[#4238b8] rounded-xl p-4 text-white text-center shadow-sm">
-          <h4 className="font-bold text-sm mb-1">{tr("becomeProAccess")}</h4>
-          <p className="text-xs text-indigo-200 mb-4 leading-tight">{tr("tryMoreFeatures")}</p>
-          <Button className="w-full bg-white text-[#4238b8] hover:bg-gray-50 font-bold rounded-lg shadow-sm">
-            {tr("upgradePro")}
-          </Button>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center shadow-sm">
+          <div className="flex items-center justify-center gap-1.5 mb-1">
+            <Coins size={15} className="text-amber-600" />
+            <h4 className="font-bold text-sm text-amber-900">{tr("tokNeedMore")}</h4>
+          </div>
+          <p className="text-xs text-amber-700 mb-3 leading-tight">{tr("tokJobCost")}</p>
+          <Link href="/recruiter/tokens" className="block w-full text-center py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-colors">
+            {tr("tokRefill")}
+          </Link>
         </div>
       </div>
     </div>

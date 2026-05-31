@@ -128,9 +128,9 @@ export function createApi(http: Http) {
         if (params?.salaryMin != null) q.set("salaryMin", String(params.salaryMin));
         if (params?.page) q.set("page", String(params.page));
         if (params?.limit) q.set("limit", String(params.limit));
-        return http.request<Paginated<Job>>(`/jobs${q.toString() ? `?${q}` : ""}`, { auth: false });
+        return http.request<Paginated<Job>>(`/jobs${q.toString() ? `?${q}` : ""}`);
       },
-      get: (jobId: string) => http.request<Job>(`/jobs/${jobId}`, { auth: false }),
+      get: (jobId: string) => http.request<Job>(`/jobs/${jobId}`),
       create: (body: {
         title: string;
         description: string;
