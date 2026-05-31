@@ -4,101 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "@/lib/i18n";
 import { Clock, ArrowRight, BookOpen, Mic, DollarSign, TrendingUp, Users } from "lucide-react";
+import { articles, type ArticleCategory } from "@/lib/resources-data";
 
-type Category = "all" | "resume" | "interview" | "salary" | "career" | "networking";
-
-const articles = [
-  {
-    id: 1,
-    category: "resume" as Category,
-    image: "https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=600&h=400&fit=crop",
-    minutes: 7,
-    titleKey: "How to Write a Resume That Gets You Hired in Ethiopia",
-    descKey: "Learn how to structure your CV for the Ethiopian job market, what recruiters look for, and how to make your resume stand out from the crowd.",
-    featured: true,
-  },
-  {
-    id: 2,
-    category: "resume" as Category,
-    image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&h=400&fit=crop",
-    minutes: 5,
-    titleKey: "5 Resume Mistakes That Cost You Interviews",
-    descKey: "Avoid the most common CV errors that cause recruiters to pass on qualified candidates — and learn how to fix them fast.",
-    featured: false,
-  },
-  {
-    id: 3,
-    category: "interview" as Category,
-    image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&h=400&fit=crop",
-    minutes: 10,
-    titleKey: "How to Answer \"Tell Me About Yourself\" Perfectly",
-    descKey: "Master the most common interview opener with a clear formula that highlights your experience, skills, and motivation.",
-    featured: true,
-  },
-  {
-    id: 4,
-    category: "interview" as Category,
-    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=600&h=400&fit=crop",
-    minutes: 8,
-    titleKey: "30 Common Interview Questions & How to Answer Them",
-    descKey: "A comprehensive guide to the questions asked most often in Ethiopian companies, with sample answers for each.",
-    featured: false,
-  },
-  {
-    id: 5,
-    category: "salary" as Category,
-    image: "https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=600&h=400&fit=crop",
-    minutes: 6,
-    titleKey: "How to Negotiate Your Salary Without Losing the Offer",
-    descKey: "Step-by-step negotiation scripts and strategies to help you get paid what you are worth without feeling awkward.",
-    featured: true,
-  },
-  {
-    id: 6,
-    category: "salary" as Category,
-    image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=600&h=400&fit=crop",
-    minutes: 4,
-    titleKey: "2026 Salary Guide: What Ethiopia's Top Roles Pay",
-    descKey: "Benchmark your salary against real market data for software engineers, finance professionals, marketers, and more.",
-    featured: false,
-  },
-  {
-    id: 7,
-    category: "career" as Category,
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop",
-    minutes: 9,
-    titleKey: "How to Build Skills Recruiters Actually Want",
-    descKey: "Use free and affordable resources to close skill gaps, build a portfolio, and make yourself irresistible to hiring managers.",
-    featured: true,
-  },
-  {
-    id: 8,
-    category: "career" as Category,
-    image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=400&fit=crop",
-    minutes: 7,
-    titleKey: "From Junior to Senior: A Career Roadmap",
-    descKey: "How to plan your career progression, seek mentors, and take on the right projects to accelerate your growth.",
-    featured: false,
-  },
-  {
-    id: 9,
-    category: "networking" as Category,
-    image: "https://images.unsplash.com/photo-1528605105345-5344ea20e269?w=600&h=400&fit=crop",
-    minutes: 6,
-    titleKey: "How to Build a Professional Network in Ethiopia",
-    descKey: "Practical strategies for meeting the right people, online and offline, to open doors that job boards never can.",
-    featured: false,
-  },
-  {
-    id: 10,
-    category: "networking" as Category,
-    image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop",
-    minutes: 5,
-    titleKey: "LinkedIn for Ethiopian Professionals: The Complete Guide",
-    descKey: "Optimize your LinkedIn profile, connect strategically, and use the platform to get found by recruiters.",
-    featured: false,
-  },
-];
+type Category = ArticleCategory | "all";
 
 const filters: { key: Category; labelKey: "filterAll" | "filterResume" | "filterInterview" | "filterSalary" | "filterCareer" | "filterNetworking"; Icon: typeof BookOpen }[] = [
   { key: "all", labelKey: "filterAll", Icon: BookOpen },
@@ -133,7 +41,7 @@ export default function ResourcesPage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-indigo-500/20 border border-indigo-400/30 rounded-full px-4 py-1.5 mb-6">
             <BookOpen size={14} className="text-indigo-300" />
-            <span className="text-xs font-semibold text-indigo-200 tracking-wide">Career Library</span>
+            <span className="text-xs font-semibold text-indigo-200 tracking-wide">{tr("resCareerLibrary")}</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white mb-5">{tr("resourcesTitle")}</h1>
           <p className="text-indigo-200 text-lg max-w-2xl mx-auto leading-relaxed">{tr("resourcesSubtitle")}</p>
@@ -160,18 +68,21 @@ export default function ResourcesPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">No articles found.</div>
+          <div className="text-center py-20 text-slate-400">{tr("mjNoJobs")}</div>
         ) : (
           <>
             {/* Featured article */}
             {featured && (
               <div className="mb-12">
-                <div className="group bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow lg:flex">
+                <Link
+                  href={`/resources/${featured.slug}`}
+                  className="group bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow lg:flex block"
+                >
                   <div className="lg:w-1/2 h-64 lg:h-auto relative overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={featured.image}
-                      alt={featured.titleKey}
+                      alt={tr(featured.titleKey as Parameters<typeof tr>[0])}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
@@ -182,34 +93,36 @@ export default function ResourcesPage() {
                       </span>
                       <span className="flex items-center gap-1.5 text-xs text-slate-400">
                         <Clock size={12} />
-                        {featured.minutes} {tr("minRead")}
+                        {featured.minutes} {tr("resMinRead")}
                       </span>
                     </div>
-                    <h2 className="text-2xl font-extrabold text-slate-900 mb-3 leading-tight">{featured.titleKey}</h2>
-                    <p className="text-slate-500 text-sm leading-relaxed mb-6">{featured.descKey}</p>
-                    <Link
-                      href="/login"
-                      className="inline-flex items-center gap-2 text-indigo-600 font-semibold text-sm hover:gap-3 transition-all"
-                    >
-                      Read article <ArrowRight size={16} />
-                    </Link>
+                    <h2 className="text-2xl font-extrabold text-slate-900 mb-3 leading-tight group-hover:text-indigo-700 transition-colors">
+                      {tr(featured.titleKey as Parameters<typeof tr>[0])}
+                    </h2>
+                    <p className="text-slate-500 text-sm leading-relaxed mb-6">
+                      {tr(featured.descKey as Parameters<typeof tr>[0])}
+                    </p>
+                    <span className="inline-flex items-center gap-2 text-indigo-600 font-semibold text-sm group-hover:gap-3 transition-all">
+                      {tr("resReadArticle")} <ArrowRight size={16} />
+                    </span>
                   </div>
-                </div>
+                </Link>
               </div>
             )}
 
             {/* Article grid */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {rest.map((article) => (
-                <div
+                <Link
                   key={article.id}
+                  href={`/resources/${article.slug}`}
                   className="group bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="h-48 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={article.image}
-                      alt={article.titleKey}
+                      alt={tr(article.titleKey as Parameters<typeof tr>[0])}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
@@ -220,19 +133,20 @@ export default function ResourcesPage() {
                       </span>
                       <span className="flex items-center gap-1 text-xs text-slate-400">
                         <Clock size={11} />
-                        {article.minutes} {tr("minRead")}
+                        {article.minutes} {tr("resMinRead")}
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-900 leading-snug text-sm">{article.titleKey}</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{article.descKey}</p>
-                    <Link
-                      href="/login"
-                      className="inline-flex items-center gap-1.5 text-indigo-600 font-semibold text-xs hover:gap-2.5 transition-all"
-                    >
-                      Read more <ArrowRight size={13} />
-                    </Link>
+                    <h3 className="font-bold text-slate-900 leading-snug text-sm group-hover:text-indigo-700 transition-colors">
+                      {tr(article.titleKey as Parameters<typeof tr>[0])}
+                    </h3>
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                      {tr(article.descKey as Parameters<typeof tr>[0])}
+                    </p>
+                    <span className="inline-flex items-center gap-1.5 text-indigo-600 font-semibold text-xs group-hover:gap-2.5 transition-all">
+                      {tr("resReadMore")} <ArrowRight size={13} />
+                    </span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </>
