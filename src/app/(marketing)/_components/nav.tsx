@@ -12,8 +12,7 @@ const navLinks = [
   { key: "findJobs" as const, href: "/jobs" },
   { key: "features" as const, href: "/#features" },
   { key: "resources" as const, href: "/resources" },
-  { key: "resumeBuilder" as const, href: "/resume-builder" },
-  { key: "forCompanies" as const, href: "/login" },
+  { key: "resumeBuilder" as const, href: "/resume-builder" }
 ];
 
 export default function MarketingNav() {
@@ -26,9 +25,8 @@ export default function MarketingNav() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">N</div>
-            <span className="font-bold text-slate-900 text-lg tracking-tight">Negarit</span>
+          <Link href="/" className="flex items-center shrink-0">
+            <Image src="/logo.png" alt="Negarit" width={120} height={32} priority className="h-8 w-auto object-contain" />
           </Link>
 
           {/* Desktop nav */}

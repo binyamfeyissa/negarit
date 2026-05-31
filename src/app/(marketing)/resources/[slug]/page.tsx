@@ -137,7 +137,7 @@ export default function ArticleDetailPage({ params }: { params: Promise<{ slug: 
               {article.sections.map((s, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
                   <span className="text-indigo-500 font-semibold shrink-0">{i + 1}.</span>
-                  <span>{s.heading}</span>
+                  <span>{tr(s.headingKey as Parameters<typeof tr>[0])}</span>
                 </li>
               ))}
             </ol>

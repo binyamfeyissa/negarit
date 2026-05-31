@@ -46,6 +46,8 @@ type AuthContextValue = {
     industry: string;
     licenseFile?: File | null;
   }) => Promise<{ message: string; userId: string }>;
+  verifyEmail: (otp: string) => Promise<LoginResponse["user"]>;
+  resendOtp: () => Promise<void>;
   setAuth: (auth: StoredAuth) => void;
 };
 
@@ -170,6 +172,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [api],
   );
 
+  const verifyEmail = useCallback(
+    async (otp: string) => {
+      await api.auth.verifyEmail(otp);
+      // The original token still has isVerified: false — refresh to get the updated one.
+      const refreshed = await api.auth.refresh();
+      // Reconstruct user with isVerified: true from the refreshed token payload.
+      // The server encodes this in the JWT; we read it back via /auth/refresh response.
+      // Since RefreshResponse only gives us accessToken, keep existing user but flip isVerified.
+      const updatedUser = userRef.current ? { ...userRef.current, isVerified: true } : null;
+      applyAuth({ accessToken: refreshed.accessToken, user: updatedUser });
+      return updatedUser!;
+    },
+    [api], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const resendOtp = useCallback(async () => {
+    await api.auth.resendOtp();
+  }, [api]);
+
   // Hydrate from localStorage on mount — the http client will refresh the
   // access token on the first 401 it encounters (deduped via refreshingRef).
   useEffect(() => {
@@ -202,9 +223,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       registerApplicant,
       registerRecruiter,
+      verifyEmail,
+      resendOtp,
       setAuth,
     }),
-    [api, accessToken, user, isReady, login, logout, registerApplicant, registerRecruiter, setAuth],
+    [api, accessToken, user, isReady, login, logout, registerApplicant, registerRecruiter, verifyEmail, resendOtp, setAuth],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

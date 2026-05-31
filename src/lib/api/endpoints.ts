@@ -56,6 +56,14 @@ export function createApi(http: Http) {
       }) => http.request<LoginResponse>("/auth/register", { method: "POST", body: JSON.stringify(body), auth: false }),
       registerRecruiter: (form: FormData) =>
         http.request<{ message: string; userId: string }>("/auth/register", { method: "POST", body: form, auth: false }),
+      verifyEmail: (otp: string) =>
+        http.request<{ message: string }>("/auth/verify-email", { method: "POST", body: JSON.stringify({ otp }) }),
+      resendOtp: () =>
+        http.request<{ message: string }>("/auth/resend-otp", { method: "POST" }),
+      forgotPassword: (email: string) =>
+        http.request<{ message: string }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }), auth: false }),
+      resetPassword: (token: string, newPassword: string) =>
+        http.request<{ message: string }>("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, newPassword }), auth: false }),
     },
     applicant: {
       me: () => http.request<ApplicantProfile>("/applicants/me"),
