@@ -33,7 +33,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   }
 
   function tr(key: TranslationKey): string {
-    return (t[locale][key] ?? t.en[key] ?? key) as string;
+    return ((t[locale] as Record<string, string>)[key] ?? t.en[key] ?? key) as string;
   }
 
   return (
