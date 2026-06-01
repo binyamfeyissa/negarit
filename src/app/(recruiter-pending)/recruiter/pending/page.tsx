@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, Building2, LogOut } from "lucide-react";
+import { Clock, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RequireRole } from "@/components/auth/require-role";
 import { useAuth } from "@/components/auth/auth-provider";
