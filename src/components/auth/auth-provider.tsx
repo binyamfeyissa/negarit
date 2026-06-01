@@ -166,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       form.append("password", body.password);
       form.append("role", "recruiter");
       form.append("industry", body.industry);
-      if (body.licenseFile) form.append("file", body.licenseFile);
+      if (body.licenseFile) form.append("licenseDoc", body.licenseFile);
       return await api.auth.registerRecruiter(form);
     },
     [api],
