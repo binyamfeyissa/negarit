@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Clock, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,18 @@ import { useAuth } from "@/components/auth/auth-provider";
 
 function PendingContent() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, api } = useAuth();
+  const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.isVerified) {
-      router.replace("/recruiter");
-    }
-  }, [user?.isVerified, router]);
+    let cancelled = false;
+    api.recruiter.me().then((p) => {
+      if (cancelled) return;
+      setStatus(p.status);
+      if (p.status === "ACTIVE") router.replace("/recruiter");
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [api, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
@@ -40,7 +45,7 @@ function PendingContent() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-400">Status</span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-              <Clock size={11} /> Pending
+              <Clock size={11} /> {status ?? "PENDING"}
             </span>
           </div>
         </div>

@@ -32,10 +32,6 @@ export function RequireRole({
       router.replace(`/login?next=${encodeURIComponent(pathname || "/")}`);
       return;
     }
-    if (problem === "not_verified" && user?.role === "RECRUITER") {
-      router.replace("/recruiter/pending");
-      return;
-    }
     router.replace(roleHome(user?.role ?? "APPLICANT"));
   }, [problem, pathname, router, user?.role]);
 
