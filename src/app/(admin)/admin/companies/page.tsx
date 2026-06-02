@@ -125,32 +125,45 @@ export default function AdminCompaniesPage() {
           </CardHeader>
           <CardContent className="p-4 space-y-3">
             {pending.map((r) => (
-              <div key={r.id} className="flex items-center justify-between gap-4 rounded-xl border border-amber-100 bg-white p-4">
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-gray-900 truncate">{r.companyName}</p>
-                  <p className="text-sm text-gray-500">{r.email} · {r.industry}</p>
+              <div key={r.id} className="rounded-xl border border-amber-100 bg-white p-4 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900 truncate">{r.companyName}</p>
+                    <p className="text-sm text-gray-500">{r.email} · {r.industry}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => handleReview(r.id, "approve")}
+                      disabled={reviewingId === r.id}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      <CheckCircle size={14} className="mr-1" />
+                      {tr("acApprove")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleReview(r.id, "reject")}
+                      disabled={reviewingId === r.id}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <XCircle size={14} className="mr-1" />
+                      {tr("acReject")}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    size="sm"
-                    onClick={() => handleReview(r.id, "approve")}
-                    disabled={reviewingId === r.id}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                {(r as AnyRecruiter).license_doc && typeof (r as AnyRecruiter).license_doc === "string" ? (
+                  <a
+                    href={String((r as AnyRecruiter).license_doc)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline"
                   >
-                    <CheckCircle size={14} className="mr-1" />
-                    {tr("acApprove")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleReview(r.id, "reject")}
-                    disabled={reviewingId === r.id}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <XCircle size={14} className="mr-1" />
-                    {tr("acReject")}
-                  </Button>
-                </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    View License Document
+                  </a>
+                ) : <span className="text-xs text-gray-400 italic">No license document uploaded</span>}
               </div>
             ))}
           </CardContent>
@@ -176,7 +189,7 @@ export default function AdminCompaniesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="font-semibold text-gray-900 truncate">{String(c.companyName ?? c.name ?? "—")}</div>
+                          <div className="font-semibold text-gray-900 truncate">{String(c.companyName ?? c.company_name ?? c.name ?? "—")}</div>
                           <div className="text-sm text-gray-500 truncate">{String(c.industry ?? "—")}</div>
                         </div>
                         <div className="text-sm text-gray-500 shrink-0">{c.employeeCount ? `${c.employeeCount} emp` : "—"}</div>
@@ -208,6 +221,43 @@ export default function AdminCompaniesPage() {
                             : <span className="px-2 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-medium">{tr("statusUnverified")}</span>
                           }
                         </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+                        {typeof c.license_doc === "string" && c.license_doc ? (
+                          <a
+                            href={c.license_doc}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            View Document
+                          </a>
+                        ) : <span />}
+                        {c.status === "PENDING" && typeof c.id === "string" ? (
+                          <div className="flex gap-1.5">
+                            <Button
+                              size="sm"
+                              onClick={() => handleReview(String(c.id), "approve")}
+                              disabled={reviewingId === String(c.id)}
+                              className="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                            >
+                              <CheckCircle size={12} className="mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleReview(String(c.id), "reject")}
+                              disabled={reviewingId === String(c.id)}
+                              className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                            >
+                              <XCircle size={12} className="mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
