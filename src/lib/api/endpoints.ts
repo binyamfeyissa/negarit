@@ -9,6 +9,7 @@ import type {
   LoginResponse,
   McqsResult,
   MockInterviewResult,
+  Notification,
   Paginated,
   PaymentHistoryItem,
   PaymentInitResult,
@@ -174,6 +175,12 @@ export function createApi(http: Http) {
       verify: (txRef: string) =>
         http.request<PaymentVerifyResult>(`/payments/verify/${txRef}`, { auth: false }),
       history: () => http.request<{ payments: PaymentHistoryItem[] }>("/payments/history"),
+    },
+    notifications: {
+      list: () => http.request<{ notifications: Notification[]; unreadCount: number }>("/notifications/me"),
+      markRead: (id: string) => http.request<void>(`/notifications/${id}/read`, { method: "PATCH" }),
+      markAllRead: () => http.request<void>("/notifications/read-all", { method: "PATCH" }),
+      delete: (id: string) => http.request<void>(`/notifications/${id}`, { method: "DELETE" }),
     },
     admin: {
       analyticsOverview: () => http.request<AnalyticsOverview>("/admin/analytics/overview"),

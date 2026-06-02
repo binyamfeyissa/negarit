@@ -225,3 +225,20 @@ export type PaymentHistoryItem = {
   tokensGranted: number;
   createdAt: string;
 };
+
+export type NotificationType =
+  | "ACCOUNT_APPROVED"
+  | "ACCOUNT_REJECTED"
+  | "APPLICATION_RECEIVED"
+  | "APPLICATION_STATUS_CHANGED"
+  | "INTERVIEW_SCHEDULED";
+
+export type Notification = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  read: boolean;
+  link?: string | null;
+  created_at: string;
+};

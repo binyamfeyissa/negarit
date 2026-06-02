@@ -104,6 +104,7 @@ export default function UsersPage() {
                 <TableHead className="text-gray-500 font-medium text-xs">{tr("auColRole")}</TableHead>
                 <TableHead className="text-gray-500 font-medium text-xs">{tr("auColStatus")}</TableHead>
                 <TableHead className="text-gray-500 font-medium text-xs">{tr("auColCreated")}</TableHead>
+                <TableHead className="text-gray-500 font-medium text-xs">License</TableHead>
                 <TableHead className="text-right w-12"></TableHead>
               </TableRow>
             </TableHeader>
@@ -116,6 +117,19 @@ export default function UsersPage() {
                   <TableCell className="text-gray-600 font-medium">{displayField(u, "status")}</TableCell>
                   <TableCell className="text-gray-600 text-sm">
                     {typeof u.created_at === "string" ? new Date(u.created_at).toLocaleString() : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {u.role === "RECRUITER" && typeof u.license_doc === "string" && u.license_doc ? (
+                      <a
+                        href={u.license_doc}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-blue-600 hover:underline whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        View Document
+                      </a>
+                    ) : "—"}
                   </TableCell>
                   <TableCell className="text-right py-2">
                     <DropdownMenu>

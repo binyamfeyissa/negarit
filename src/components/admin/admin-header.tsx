@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { AdminSidebarLinks } from '@/components/admin/admin-sidebar';
@@ -10,6 +10,7 @@ import { LanguageSwitcher } from '@/components/ui/language-switcher';
 import { useAuth } from '@/components/auth/auth-provider';
 import { useLocale } from '@/lib/i18n';
 import { useRouter } from 'next/navigation';
+import { NotificationPanel } from '@/components/notifications/notification-panel';
 
 interface HeaderProps {
   userName?: string;
@@ -58,10 +59,7 @@ export function AdminHeader({
           {tr("logout")}
         </Button>
 
-        <button className="relative p-2 text-gray-400 hover:text-gray-600 transition border border-gray-100 rounded-full" aria-label={tr("notificationsLabel")}>
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-        </button>
+        <NotificationPanel />
 
         <div className="flex items-center space-x-3">
           <div className="text-right hidden sm:block">
