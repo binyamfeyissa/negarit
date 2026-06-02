@@ -114,7 +114,7 @@ function AuthForm() {
       if (mode === "register_recruiter") {
         const res = await registerRecruiter({ companyName, email, password, industry, licenseFile });
         setMode("login");
-        setInfo(`${tr("recruiterPendingMsg")} (ID: ${res.userId})`);
+        setInfo(tr("recruiterPendingMsg"));
         return;
       }
 

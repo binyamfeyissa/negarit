@@ -62,7 +62,7 @@ export default function AdminCompaniesPage() {
 
   const total = recruiters.length;
   const active = recruiters.filter((r) => (r.status ?? "") === "ACTIVE").length;
-  const verified = recruiters.filter((r) => !!r.isVerified).length;
+  const verified = recruiters.filter((r) => !!(r.isVerified ?? r.is_verified)).length;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -216,7 +216,7 @@ export default function AdminCompaniesPage() {
                           <span>{String(c.activeJobs ?? 0)} jobs</span>
                         </div>
                         <div className="text-sm">
-                          {c.isVerified
+                          {(c.isVerified ?? c.is_verified)
                             ? <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">{tr("statusVerified")}</span>
                             : <span className="px-2 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-medium">{tr("statusUnverified")}</span>
                           }
