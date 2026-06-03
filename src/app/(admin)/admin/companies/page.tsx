@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building, Users, Briefcase, Globe, CheckCircle, XCircle } from "lucide-react";
+import { Building, Users, Briefcase, CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { RecruiterProfile } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
@@ -127,8 +127,8 @@ export default function AdminCompaniesPage() {
               <div key={r.id} className="rounded-xl border border-amber-100 bg-white p-4 space-y-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 truncate">{r.companyName}</p>
-                    <p className="text-sm text-gray-500">{r.email} · {r.industry}</p>
+                    <p className="font-semibold text-gray-900 truncate">{(r as AnyRecruiter).company_name as string ?? r.companyName ?? "—"}</p>
+                    <p className="text-sm text-gray-500">{r.email} · {r.industry ?? "—"}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
@@ -180,84 +180,72 @@ export default function AdminCompaniesPage() {
               <div className="col-span-full text-sm text-gray-500 p-6 text-center">No companies found.</div>
             ) : (
               recruiters.map((c) => (
-                <div key={String(c.id ?? Math.random())} className="border rounded-2xl p-4 bg-white">
+                <div key={String(c.id ?? Math.random())} className="border rounded-2xl p-4 bg-white hover:border-indigo-200 hover:shadow-sm transition-all">
                   <div className="flex items-start space-x-3">
-                    <div className="h-12 w-12 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-                      <Building className="text-slate-500" />
+                    <div className="h-11 w-11 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+                      <Building size={20} className="text-indigo-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="font-semibold text-gray-900 truncate">{String(c.companyName ?? c.company_name ?? c.name ?? "—")}</div>
-                          <div className="text-sm text-gray-500 truncate">{String(c.industry ?? "—")}</div>
+                          <div className="font-semibold text-gray-900 truncate text-sm">
+                            {String(c.company_name ?? c.companyName ?? "—")}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate mt-0.5">{String(c.industry ?? "—")}</div>
                         </div>
-                        <div className="text-sm text-gray-500 shrink-0">{c.employeeCount ? `${c.employeeCount} emp` : "—"}</div>
+                        {c.is_verified
+                          ? <span className="shrink-0 px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">{tr("statusVerified")}</span>
+                          : <span className="shrink-0 px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full text-xs font-medium">{tr("statusUnverified")}</span>
+                        }
                       </div>
 
-                      <div className="mt-3 text-sm text-gray-600 space-y-1">
-                        <div className="truncate">{String(c.email ?? "—")}</div>
-                        {c.website ? (
-                          <a
-                            className="text-indigo-600 text-sm hover:underline inline-flex items-center gap-1"
-                            href={String(c.website).startsWith("http") ? String(c.website) : `https://${String(c.website)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Globe size={14} />
-                            <span className="truncate">{String(c.website).replace(/^https?:\/\//, "")}</span>
-                          </a>
-                        ) : null}
-                      </div>
+                      <div className="mt-2.5 text-xs text-gray-500 truncate">{String(c.email ?? "—")}</div>
 
-                      <div className="mt-4 flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
-                          <Briefcase size={14} />
-                          <span>{String(c.activeJobs ?? 0)} jobs</span>
-                        </div>
-                        <div className="text-sm">
-                          {(c.isVerified ?? c.is_verified)
-                            ? <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">{tr("statusVerified")}</span>
-                            : <span className="px-2 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-medium">{tr("statusUnverified")}</span>
-                          }
-                        </div>
-                      </div>
                       <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
                         {typeof c.license_doc === "string" && c.license_doc ? (
                           <a
                             href={c.license_doc}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline font-medium"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             View Document
                           </a>
-                        ) : <span />}
-                        {!(c.isVerified ?? c.is_verified) && typeof c.id === "string" ? (
-                          <div className="flex gap-1.5">
-                            <Button
-                              size="sm"
-                              onClick={() => handleReview(String(c.id), "approve")}
-                              disabled={reviewingId === String(c.id)}
-                              className="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
-                            >
-                              <CheckCircle size={12} className="mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleReview(String(c.id), "reject")}
-                              disabled={reviewingId === String(c.id)}
-                              className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                            >
-                              <XCircle size={12} className="mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        ) : null}
+                        ) : (
+                          <span className="text-xs text-gray-300 italic">No document</span>
+                        )}
+                        {typeof c.created_at === "string" && (
+                          <span className="text-xs text-gray-400">
+                            Joined {new Date(c.created_at).toLocaleDateString()}
+                          </span>
+                        )}
                       </div>
+
+                      {!c.is_verified && typeof c.id === "string" ? (
+                        <div className="flex gap-1.5 mt-3">
+                          <Button
+                            size="sm"
+                            onClick={() => handleReview(String(c.id), "approve")}
+                            disabled={reviewingId === String(c.id)}
+                            className="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <CheckCircle size={12} className="mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleReview(String(c.id), "reject")}
+                            disabled={reviewingId === String(c.id)}
+                            className="h-7 px-2 text-xs text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <XCircle size={12} className="mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </div>

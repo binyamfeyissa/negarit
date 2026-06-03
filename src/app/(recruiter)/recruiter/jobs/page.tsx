@@ -85,7 +85,6 @@ export default function RecruiterJobsPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-gray-900 truncate">{job.title}</h3>
-                      <p className="text-sm text-gray-500 font-medium">{job.recruiter?.companyName ?? "—"}</p>
                     </div>
                   </div>
 
