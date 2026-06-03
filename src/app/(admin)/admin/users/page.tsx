@@ -39,6 +39,7 @@ export default function UsersPage() {
   const [q, setQ] = useState("");
   const [users, setUsers] = useState<AnyUser[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const query = useMemo(() => q.trim(), [q]);
 
@@ -58,7 +59,9 @@ export default function UsersPage() {
     return () => {
       cancelled = true;
     };
-  }, [api, query]);
+  }, [api, query, reloadKey]);
+
+  function reload() { setReloadKey((k) => k + 1); }
 
   function exportJson() {
     const blob = new Blob([JSON.stringify(users, null, 2)], { type: "application/json" });
@@ -141,7 +144,7 @@ export default function UsersPage() {
                           onClick={() => {
                             const id = userId(u);
                             if (!id) return;
-                            api.admin.updateUserStatus(id, { status: "SUSPENDED", note: "Suspended by admin" }).then(() => null);
+                            api.admin.updateUserStatus(id, { status: "SUSPENDED", note: "Suspended by admin" }).then(reload);
                           }}
                         >
                           {tr("auSuspend")}
@@ -150,7 +153,7 @@ export default function UsersPage() {
                           onClick={() => {
                             const id = userId(u);
                             if (!id) return;
-                            api.admin.updateUserStatus(id, { status: "ACTIVE", note: "Re-activated by admin" }).then(() => null);
+                            api.admin.updateUserStatus(id, { status: "ACTIVE", note: "Re-activated by admin" }).then(reload);
                           }}
                         >
                           {tr("auActivate")}

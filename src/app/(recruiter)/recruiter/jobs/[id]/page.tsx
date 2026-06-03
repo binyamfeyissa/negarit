@@ -294,23 +294,45 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
             <button onClick={() => setMcqs(null)} className="text-xs text-slate-400 hover:text-slate-700">Dismiss</button>
           </div>
           <div className="p-4 space-y-4">
-            {mcqs.questions.map((q, i) => (
-              <div key={i} className="rounded-xl border border-indigo-50 bg-indigo-50/40 p-4">
-                <p className="text-sm font-semibold text-slate-900 mb-2">{i + 1}. {q.question}</p>
-                {q.options && q.options.length > 0 ? (
-                  <ul className="space-y-1">
-                    {q.options.map((opt, j) => (
-                      <li key={j} className={`text-xs px-3 py-1.5 rounded-lg ${q.answer === opt ? "bg-emerald-50 text-emerald-800 font-semibold border border-emerald-100" : "text-slate-600"}`}>
-                        {opt}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {q.answer && !q.options?.length ? (
-                  <p className="text-xs text-emerald-700 mt-2 font-medium">Answer: {q.answer}</p>
-                ) : null}
-              </div>
-            ))}
+            {mcqs.questions.map((q, i) => {
+              // options may be a string[] or a {A:"..",B:".."}  object
+              const optEntries: [string, string][] = Array.isArray(q.options)
+                ? q.options.map((o, idx) => [String.fromCharCode(65 + idx), o])
+                : q.options && typeof q.options === "object"
+                  ? Object.entries(q.options as Record<string, string>)
+                  : [];
+              return (
+                <div key={i} className="rounded-xl border border-indigo-50 bg-indigo-50/40 p-4 space-y-3">
+                  <p className="text-sm font-semibold text-slate-900">{i + 1}. {q.question}</p>
+                  {optEntries.length > 0 && (
+                    <ul className="space-y-1.5">
+                      {optEntries.map(([key, text]) => {
+                        const isAnswer = q.answer === text || q.answer === key;
+                        return (
+                          <li
+                            key={key}
+                            className={`text-xs px-3 py-2 rounded-lg flex items-start gap-2 ${
+                              isAnswer
+                                ? "bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200"
+                                : "bg-white text-slate-600 border border-slate-100"
+                            }`}
+                          >
+                            <span className="font-bold shrink-0">{key}.</span>
+                            <span>{text}</span>
+                            {isAnswer && <span className="ml-auto shrink-0 text-emerald-600">✓</span>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {q.answer && (
+                    <p className="text-xs text-emerald-700 font-medium">
+                      ✓ Answer: <span className="font-semibold">{q.answer}</span>
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </Card>
       ) : null}

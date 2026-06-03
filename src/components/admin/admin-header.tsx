@@ -11,6 +11,7 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { useLocale } from '@/lib/i18n';
 import { useRouter } from 'next/navigation';
 import { NotificationPanel } from '@/components/notifications/notification-panel';
+import Link from 'next/link';
 
 interface HeaderProps {
   userName?: string;
@@ -25,9 +26,14 @@ export function AdminHeader({
   avatarUrl = "https://i.pravatar.cc/150?u=a042581f4e29026704d",
   mobileSidebarLinks,
 }: HeaderProps) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { tr } = useLocale();
   const router = useRouter();
+
+  const profileHref =
+    user?.role === "ADMIN" ? "/admin/profile" :
+    user?.role === "RECRUITER" ? "/recruiter/profile" :
+    "/candidate/profile";
 
   async function onLogout() {
     await logout();
@@ -61,7 +67,7 @@ export function AdminHeader({
 
         <NotificationPanel />
 
-        <div className="flex items-center space-x-3">
+        <Link href={profileHref} className="flex items-center space-x-3 rounded-lg px-2 py-1 hover:bg-gray-50 transition-colors">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-semibold leading-tight">{userName}</p>
             <p className="text-xs text-gray-500 leading-tight">{userRole}</p>
@@ -70,7 +76,7 @@ export function AdminHeader({
             <AvatarImage src={avatarUrl} alt={userName} />
             <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
           </Avatar>
-        </div>
+        </Link>
       </div>
     </header>
   );

@@ -247,7 +247,7 @@ function AuthForm() {
                     <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="FinTech" className="rounded-xl border-gray-200" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{tr("licenseDocLabel")}</label>
+                    <label className="text-sm font-medium">{tr("licenseDocLabel")}<span className="text-red-500">*</span></label>
                     <Input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setLicenseFile(e.target.files?.[0] ?? null)} className="rounded-xl border-gray-200" />
                   </div>
                 </>

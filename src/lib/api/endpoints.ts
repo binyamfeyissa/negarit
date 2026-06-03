@@ -96,8 +96,12 @@ export function createApi(http: Http) {
         if (params?.limit) q.set("limit", String(params.limit));
         return http.request<Paginated<Application>>(`/applications/me${q.toString() ? `?${q}` : ""}`);
       },
-      apply: (jobId: string, body: { coverLetter?: string }) =>
-        http.request<Application>(`/jobs/${jobId}/apply`, { method: "POST", body: JSON.stringify(body) }),
+      apply: (jobId: string, body: { coverLetter?: File; resume?: File }) => {
+        const form = new FormData();
+        if (body.coverLetter) form.append("coverLetter", body.coverLetter);
+        if (body.resume) form.append("resume", body.resume);
+        return http.request<Application>(`/jobs/${jobId}/apply`, { method: "POST", body: form });
+      },
     },
     recruiter: {
       me: () => http.request<RecruiterProfile>("/recruiters/me"),

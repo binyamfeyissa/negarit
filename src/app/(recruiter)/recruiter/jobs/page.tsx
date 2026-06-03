@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Filter, Trash2 } from "lucide-react";
+import { MapPin, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PostJobDialog } from "@/components/recruiter/post-job-dialog";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -16,11 +16,14 @@ export default function RecruiterJobsPage() {
   const { api } = useAuth();
   const { tr } = useLocale();
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  function loadJobs() {
+  useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     api.recruiter
       .myJobs({ page: 1, limit: 50 })
       .then((res) => {
@@ -31,11 +34,12 @@ export default function RecruiterJobsPage() {
       .catch((e) => {
         if (cancelled) return;
         setError(e instanceof ApiError ? e.message : "Failed to load jobs.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }
-
-  useEffect(loadJobs, [api]);
+  }, [api, reloadKey]);
 
   async function handleDelete(jobId: string, e: React.MouseEvent) {
     e.preventDefault();
@@ -57,17 +61,12 @@ export default function RecruiterJobsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{tr("jobs")}</h1>
-          <p className="text-sm text-gray-500 mt-1">{tr("rjNoJobs")}</p>
+          <p className="text-sm text-gray-500 mt-1">{loading ? "" : jobs.length === 0 ? tr("rjNoJobs") : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} posted`}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <PostJobDialog
-            onSuccess={loadJobs}
-            trigger={<Button className="bg-[#4238b8] hover:bg-[#342c94] text-white font-semibold">+ {tr("rjPostJob")}</Button>}
-          />
-          <Button variant="outline" className="flex items-center gap-2 font-semibold" disabled>
-            <Filter size={16} /> Filter
-          </Button>
-        </div>
+        <PostJobDialog
+          onSuccess={() => setReloadKey((k) => k + 1)}
+          trigger={<Button className="bg-[#4238b8] hover:bg-[#342c94] text-white font-semibold">+ {tr("rjPostJob")}</Button>}
+        />
       </div>
 
       {error ? <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3">{error}</div> : null}
@@ -123,8 +122,8 @@ export default function RecruiterJobsPage() {
             </button>
           </div>
         ))}
-        {jobs.length === 0 ? (
-          <div className="text-sm text-gray-500">{tr("rjNoJobs")}</div>
+        {!loading && jobs.length === 0 ? (
+          <div className="col-span-full text-sm text-gray-500 py-12 text-center">{tr("rjNoJobs")}</div>
         ) : null}
       </div>
     </div>

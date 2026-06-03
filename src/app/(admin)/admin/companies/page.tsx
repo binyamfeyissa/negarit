@@ -21,29 +21,28 @@ export default function AdminCompaniesPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  async function load() {
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    try {
-      const [usersRes, pendingRes] = await Promise.all([
-        api.admin.users({ role: "RECRUITER", page: 1, limit: 100 }),
-        api.admin.pendingRecruiters(),
-      ]);
+    Promise.all([
+      api.admin.users({ role: "RECRUITER", page: 1, limit: 100 }),
+      api.admin.pendingRecruiters(),
+    ]).then(([usersRes, pendingRes]) => {
+      if (cancelled) return;
       const list = Array.isArray(usersRes.data) ? usersRes.data.filter((r) => r.role === "RECRUITER") : [];
       setRecruiters(list);
       setPending(pendingRes.data ?? []);
       setError(null);
-    } catch (e) {
+    }).catch((e) => {
+      if (cancelled) return;
       setError(e instanceof ApiError ? e.message : "Failed to load companies.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [api, reloadKey]);
 
   async function handleReview(userId: string, action: "approve" | "reject") {
     setReviewingId(userId);
@@ -52,7 +51,7 @@ export default function AdminCompaniesPage() {
     try {
       await api.admin.reviewRecruiter(userId, { decision: action });
       setSuccess(`Recruiter ${action === "approve" ? "approved" : "rejected"}.`);
-      await load();
+      setReloadKey((k) => k + 1);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to update recruiter.");
     } finally {

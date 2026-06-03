@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/auth/auth-provider";
 import type { Job, SkillGapResult, SkillGapAnalysis, MockInterviewResult, MockInterviewQuestion } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
-import { Briefcase, MapPin, DollarSign, Calendar, Users, ArrowLeft, BrainCircuit, MessageSquare, Coins, CheckCircle2, XCircle, AlertTriangle, Lightbulb, CheckCircle, Circle } from "lucide-react";
+import { Briefcase, MapPin, DollarSign, Calendar, Users, ArrowLeft, BrainCircuit, MessageSquare, Coins, CheckCircle2, XCircle, AlertTriangle, Lightbulb, CheckCircle, Circle, Paperclip, FileText } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/lib/i18n";
 
@@ -224,6 +224,68 @@ function MockInterviewCard({
   );
 }
 
+function FilePickerField({
+  label, accept, maxMb, file, onChange, hint, icon,
+}: {
+  label: string;
+  accept: string;
+  maxMb: number;
+  file: File | null;
+  onChange: (f: File | null) => void;
+  hint?: string;
+  icon?: React.ReactNode;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    if (f && f.size > maxMb * 1024 * 1024) {
+      alert(`File too large. Maximum size is ${maxMb} MB.`);
+      e.target.value = "";
+      return;
+    }
+    onChange(f);
+  }
+
+  return (
+    <div>
+      <label className="text-sm font-medium text-slate-700">{label}</label>
+      <div
+        className={`mt-2 flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 cursor-pointer transition-colors ${
+          file ? "border-indigo-300 bg-indigo-50/60" : "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/40"
+        }`}
+        onClick={() => inputRef.current?.click()}
+      >
+        {icon}
+        <div className="flex-1 min-w-0">
+          {file ? (
+            <p className="text-sm font-medium text-indigo-700 truncate">{file.name}</p>
+          ) : (
+            <p className="text-sm text-slate-500">Click to choose file</p>
+          )}
+          {hint && <p className="text-xs text-slate-400 mt-0.5">{hint}</p>}
+        </div>
+        {file && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onChange(null); if (inputRef.current) inputRef.current.value = ""; }}
+            className="text-xs text-rose-500 hover:text-rose-700 shrink-0 font-medium"
+          >
+            Remove
+          </button>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          className="hidden"
+          onChange={handleChange}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function CandidateJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { api } = useAuth();
@@ -232,8 +294,10 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
-  const [coverLetter, setCoverLetter] = useState("");
+  const [coverLetterFile, setCoverLetterFile] = useState<File | null>(null);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const [skillGap, setSkillGap] = useState<SkillGapResult | null>(null);
   const [skillGapLoading, setSkillGapLoading] = useState(false);
@@ -247,9 +311,13 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
     let cancelled = false;
     (async () => {
       try {
-        const j = await api.jobs.get(id);
+        const [j, apps] = await Promise.all([
+          api.jobs.get(id),
+          api.applicant.myApplications({ limit: 100 }),
+        ]);
         if (cancelled) return;
         setJob(j);
+        setAlreadyApplied((apps.data ?? []).some((a) => a.job?.id === id));
         setError(null);
       } catch (e) {
         if (cancelled) return;
@@ -265,9 +333,14 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
     setError(null);
     setApplyLoading(true);
     try {
-      await api.applicant.apply(id, { coverLetter: coverLetter || undefined });
+      await api.applicant.apply(id, {
+        coverLetter: coverLetterFile ?? undefined,
+        resume: resumeFile ?? undefined,
+      });
+      setAlreadyApplied(true);
       setSuccess("Application sent successfully!");
-      setCoverLetter("");
+      setCoverLetterFile(null);
+      setResumeFile(null);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Failed to apply.");
     } finally {
@@ -472,69 +545,38 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
             <CardHeader className="border-b border-slate-100 pb-4">
               <CardTitle className="text-base text-slate-950">{tr("cjApply")}</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700">{tr("cjCoverLetter")}</label>
-                <textarea
-                  value={coverLetter}
-                  onChange={(e) => setCoverLetter(e.target.value)}
-                  placeholder="Tell them why you're a great fit..."
-                  className="w-full mt-2 border border-slate-200 rounded-lg p-3 text-sm bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none h-32"
+            {alreadyApplied ? (
+              <CardContent className="p-6 flex flex-col items-center gap-3 text-center">
+                <CheckCircle size={32} className="text-emerald-500" />
+                <p className="text-sm font-semibold text-slate-800">You&apos;ve already applied</p>
+                <p className="text-xs text-slate-500">Your application has been submitted. The recruiter will review it and get back to you.</p>
+              </CardContent>
+            ) : (
+              <CardContent className="p-6 space-y-4">
+                <FilePickerField
+                  label={tr("cjCoverLetter")}
+                  accept=".pdf,.doc,.docx"
+                  maxMb={5}
+                  file={coverLetterFile}
+                  onChange={setCoverLetterFile}
+                  hint="PDF, DOC, DOCX — max 5 MB"
+                  icon={<FileText size={14} className="text-indigo-500" />}
                 />
-              </div>
-              <Button onClick={handleApply} disabled={applyLoading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-10">
-                {applyLoading ? tr("cjApplying") : tr("cjApply")}
-              </Button>
-              <p className="text-xs text-slate-500 text-center">By applying, you agree to share your profile with the recruiter.</p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border-slate-200 shadow-sm bg-slate-50/95">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base text-slate-950">{tr("cjCompany")}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-3 text-sm">
-              <div>
-                <p className="text-slate-500 text-xs">Name</p>
-                {job.recruiter?.id ? (
-                  <Link
-                    href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(job.recruiter.companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
-                    className="font-semibold text-indigo-700 hover:underline"
-                  >
-                    {job.recruiter.companyName ?? "—"}
-                  </Link>
-                ) : (
-                  <p className="font-semibold text-slate-900">{job.recruiter?.companyName ?? "—"}</p>
-                )}
-              </div>
-              {job.recruiter?.industry && (
-                <div>
-                  <p className="text-slate-500 text-xs">Industry</p>
-                  <p className="font-semibold text-slate-900">{job.recruiter.industry}</p>
-                </div>
-              )}
-              {job.recruiter?.website && (
-                <div>
-                  <p className="text-slate-500 text-xs">Website</p>
-                  <a
-                    href={job.recruiter.website.startsWith("http") ? job.recruiter.website : `https://${job.recruiter.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-indigo-600 hover:underline truncate block"
-                  >
-                    {job.recruiter.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                  </a>
-                </div>
-              )}
-              {job.recruiter?.id && (
-                <Link
-                  href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(job.recruiter.companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
-                  className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
-                >
-                  <Briefcase size={13} /> {tr("compViewAllJobs")}
-                </Link>
-              )}
-            </CardContent>
+                <FilePickerField
+                  label="Resume (optional)"
+                  accept=".pdf,.doc,.docx"
+                  maxMb={10}
+                  file={resumeFile}
+                  onChange={setResumeFile}
+                  hint="Upload a different resume for this job — max 10 MB"
+                  icon={<Paperclip size={14} className="text-slate-400" />}
+                />
+                <Button onClick={handleApply} disabled={applyLoading} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium h-10">
+                  {applyLoading ? tr("cjApplying") : tr("cjApply")}
+                </Button>
+                <p className="text-xs text-slate-500 text-center">By applying, you agree to share your profile with the recruiter.</p>
+              </CardContent>
+            )}
           </Card>
         </div>
       </div>

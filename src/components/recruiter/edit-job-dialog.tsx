@@ -23,16 +23,16 @@ export function EditJobDialog({ job, trigger, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const [title, setTitle] = useState(job.title);
+  const [title, setTitle] = useState(job.title ?? "");
   const [type, setType] = useState<JobType>(job.type);
   const [category, setCategory] = useState(job.category ?? "");
   const [salaryMin, setSalaryMin] = useState<string>(job.salaryMin != null ? String(job.salaryMin) : "");
   const [salaryMax, setSalaryMax] = useState<string>(job.salaryMax != null ? String(job.salaryMax) : "");
-  const [description, setDescription] = useState(job.description);
-  const [location, setLocation] = useState(job.location);
+  const [description, setDescription] = useState(job.description ?? "");
+  const [location, setLocation] = useState(job.location ?? "");
   const [deadline, setDeadline] = useState<string>(job.deadline ? job.deadline.slice(0, 10) : "");
-  const [requirementsRaw, setRequirementsRaw] = useState(job.requirements.join("\n"));
-  const [skillsRaw, setSkillsRaw] = useState(job.requiredSkills.join(", "));
+  const [requirementsRaw, setRequirementsRaw] = useState((job.requirements ?? []).join("\n"));
+  const [skillsRaw, setSkillsRaw] = useState((job.requiredSkills ?? []).join(", "));
 
   const requirements = useMemo(
     () =>
@@ -55,16 +55,16 @@ export function EditJobDialog({ job, trigger, onSaved }: Props) {
   useEffect(() => {
     if (!open) return;
     setError(null);
-    setTitle(job.title);
+    setTitle(job.title ?? "");
     setType(job.type);
     setCategory(job.category ?? "");
     setSalaryMin(job.salaryMin != null ? String(job.salaryMin) : "");
     setSalaryMax(job.salaryMax != null ? String(job.salaryMax) : "");
-    setDescription(job.description);
-    setLocation(job.location);
+    setDescription(job.description ?? "");
+    setLocation(job.location ?? "");
     setDeadline(job.deadline ? job.deadline.slice(0, 10) : "");
-    setRequirementsRaw(job.requirements.join("\n"));
-    setSkillsRaw(job.requiredSkills.join(", "));
+    setRequirementsRaw((job.requirements ?? []).join("\n"));
+    setSkillsRaw((job.requiredSkills ?? []).join(", "));
   }, [job, open]);
 
   const pushToast = (message: string, type: Toast["type"] = "success") => {
