@@ -37,42 +37,12 @@ function RecruiterTokensPage() {
 
   const [verifyState, setVerifyState] = useState<VerifyState>("idle");
   const [verifyResult, setVerifyResult] = useState<{ tokensGranted: number } | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  async function loadData() {
-    try {
-      const [profile, pkgs, hist] = await Promise.all([
-        api.recruiter.me(),
-        api.payments.packages(),
-        api.payments.history(),
-      ]);
-      setBalance(profile.tokens ?? 0);
-      setPackages(pkgs.packages ?? []);
-      setHistory(hist.payments ?? []);
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "Failed to load token data.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Verify Chapa redirect
-  useEffect(() => {
-    const txRef = searchParams.get("txRef");
-    if (!txRef) return;
-
-    router.replace("/recruiter/tokens", { scroll: false });
-    setVerifyState("verifying");
-    api.payments.verify(txRef)
-      .then((result) => {
-        setVerifyResult({ tokensGranted: result.tokensGranted });
-        setVerifyState("success");
-        loadData();
-      })
-      .catch(() => setVerifyState("error"));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Single data-load effect — triggered on mount and after verify succeeds
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     (async () => {
       try {
         const [profile, pkgs, hist] = await Promise.all([
@@ -92,7 +62,24 @@ function RecruiterTokensPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [api]);
+  }, [api, reloadKey]);
+
+  // Verify Chapa redirect
+  useEffect(() => {
+    const txRef = searchParams.get("txRef");
+    if (!txRef) return;
+
+    router.replace("/recruiter/tokens", { scroll: false });
+    setVerifyState("verifying");
+    api.payments.verify(txRef)
+      .then((result) => {
+        setVerifyResult({ tokensGranted: result.tokensGranted });
+        setVerifyState("success");
+        // Increment reloadKey so the data effect re-runs AFTER verify, fetching the fresh balance
+        setReloadKey((k) => k + 1);
+      })
+      .catch(() => setVerifyState("error"));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function setApiError(e: unknown) {
     if (e instanceof ApiError) {

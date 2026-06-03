@@ -177,7 +177,7 @@ export function createApi(http: Http) {
       initiate: (body: { packageId?: string; customEtb?: number }) =>
         http.request<PaymentInitResult>("/payments/initiate", { method: "POST", body: JSON.stringify(body) }),
       verify: (txRef: string) =>
-        http.request<PaymentVerifyResult>(`/payments/verify/${txRef}`, { auth: false }),
+        http.request<PaymentVerifyResult>(`/payments/verify/${txRef}`),
       history: () => http.request<{ payments: PaymentHistoryItem[] }>("/payments/history"),
     },
     notifications: {
