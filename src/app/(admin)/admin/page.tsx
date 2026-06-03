@@ -89,9 +89,17 @@ export default function AdminDashboardPage() {
   async function exportReport(format: "csv" | "json") {
     setExporting(true);
     try {
-      const buffer = await api.admin.report({ format });
-      const blob = new Blob([buffer as ArrayBuffer], {
-        type: format === "json" ? "application/json" : "text/csv",
+      const data = await api.admin.report({ format });
+      // The http client parses application/json into a JS object and returns text/* as a string.
+      // Normalize both cases into a string before creating the Blob.
+      const content =
+        typeof data === "string"
+          ? data
+          : data instanceof ArrayBuffer
+            ? data
+            : JSON.stringify(data, null, 2);
+      const blob = new Blob([content], {
+        type: format === "json" ? "application/json" : "text/csv;charset=utf-8",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

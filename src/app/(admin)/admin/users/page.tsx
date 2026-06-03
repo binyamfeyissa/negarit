@@ -87,7 +87,18 @@ export default function UsersPage() {
   function reload() { setReloadKey((k) => k + 1); }
 
   function exportJson() {
-    const blob = new Blob([JSON.stringify(users, null, 2)], { type: "application/json" });
+    const mapped = users.map((u) => ({
+      id: u.id ?? "",
+      name: displayName(u),
+      email: u.email ?? "",
+      role: u.role ?? "",
+      status: u.status ?? "",
+      company: u.company_name ?? u.companyName ?? "",
+      industry: u.industry ?? "",
+      verified: !!(u.is_verified ?? u.isVerified),
+      joined: u.created_at ?? "",
+    }));
+    const blob = new Blob([JSON.stringify(mapped, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

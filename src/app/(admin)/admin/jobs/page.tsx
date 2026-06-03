@@ -68,7 +68,7 @@ export default function JobsPage() {
   }
 
   function exportCsv() {
-    const header = ["id", "title", "company", "location", "type", "applicantCount", "postedAt"];
+    const header = ["id", "title", "company", "location", "type", "status", "applicantCount", "postedAt", "deadline"];
     const lines = [
       header.join(","),
       ...jobs.map((j) =>
@@ -78,8 +78,10 @@ export default function JobsPage() {
           JSON.stringify(j.company ?? j.recruiter?.companyName ?? ""),
           JSON.stringify(j.location),
           j.type,
+          j.status ?? "",
           String(j.applicantCount),
-          j.postedAt,
+          j.postedAt ?? "",
+          j.deadline ?? "",
         ].join(","),
       ),
     ].join("\n");
