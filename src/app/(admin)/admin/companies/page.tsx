@@ -235,7 +235,7 @@ export default function AdminCompaniesPage() {
                             View Document
                           </a>
                         ) : <span />}
-                        {c.status === "PENDING" && typeof c.id === "string" ? (
+                        {!(c.isVerified ?? c.is_verified) && typeof c.id === "string" ? (
                           <div className="flex gap-1.5">
                             <Button
                               size="sm"
