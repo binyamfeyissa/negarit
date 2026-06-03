@@ -3,34 +3,33 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { User, Lock } from "lucide-react";
 
 const settingsNav = [
-  { name: "General", href: "/admin/settings" },
-  { name: "Plan & Pricing", href: "/admin/settings/plan" },
-  { name: "My Account", href: "#" },
-  { name: "Tax & Duties", href: "#" },
-  { name: "Password", href: "#" },
-  { name: "Notifications", href: "#" },
+  { name: "Account", href: "/admin/settings", icon: User },
+  { name: "Password", href: "/admin/settings/plan", icon: Lock },
 ];
 
 export function SettingsSidebar() {
   const pathname = usePathname();
 
   return (
-    <nav className="w-full md:w-64 space-y-1 pr-6 pb-6 border-r border-transparent md:border-gray-100 flex-shrink-0">
+    <nav className="w-full md:w-52 space-y-1 pr-6 pb-6 border-r border-transparent md:border-gray-100 shrink-0">
       {settingsNav.map((item) => {
-        const isActive = pathname === item.href || (item.href !== "/admin/settings" && pathname?.startsWith(item.href));
+        const isActive = pathname === item.href;
+        const Icon = item.icon;
         return (
           <Link
             key={item.name}
             href={item.href}
             className={cn(
-              "flex items-center px-4 py-2.5 rounded-lg text-sm font-medium",
+              "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
               isActive
-                ? "bg-gray-100/80 text-gray-900"
+                ? "bg-indigo-50 text-indigo-700"
                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             )}
           >
+            <Icon size={15} />
             {item.name}
           </Link>
         );
