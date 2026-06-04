@@ -423,16 +423,19 @@ export default function CandidateJobDetailPage({ params }: { params: Promise<{ i
         <div className="relative space-y-6 p-8 md:p-10">
           <div>
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{job.title}</h1>
-            {job.recruiter?.id ? (
-              <Link
-                href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(job.recruiter.companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
-                className="mt-2 inline-block text-lg text-slate-300 hover:text-white hover:underline transition-colors"
-              >
-                {job.recruiter.companyName ?? "Company"}
-              </Link>
-            ) : (
-              <p className="mt-2 text-lg text-slate-200">{job.recruiter?.companyName ?? "Company"}</p>
-            )}
+            {(() => {
+              const companyName = (job as typeof job & { company?: string }).company ?? job.recruiter?.companyName;
+              return job.recruiter?.id ? (
+                <Link
+                  href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
+                  className="mt-2 inline-block text-lg text-slate-300 hover:text-white hover:underline transition-colors"
+                >
+                  {companyName ?? "Company"}
+                </Link>
+              ) : (
+                <p className="mt-2 text-lg text-slate-200">{companyName ?? "Company"}</p>
+              );
+            })()}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

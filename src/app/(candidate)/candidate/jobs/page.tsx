@@ -130,15 +130,19 @@ function JobCard({ job, appliedIds }: { job: Job; appliedIds: Set<string> }) {
                 {job.title}
               </h3>
               <p className="text-sm text-slate-500 mt-0.5">
-                {job.recruiter?.id ? (
-                  <Link
-                    href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(job.recruiter.companyName ?? "")}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="hover:text-indigo-600 hover:underline transition-colors"
-                  >
-                    {job.recruiter.companyName}
-                  </Link>
-                ) : (job.recruiter?.companyName ?? "—")}
+                {(() => {
+                  const companyName = (job as Job & { company?: string }).company ?? job.recruiter?.companyName;
+                  if (!companyName) return null;
+                  return job.recruiter?.id ? (
+                    <Link
+                      href={`/candidate/companies/${job.recruiter.id}?name=${encodeURIComponent(companyName)}&industry=${encodeURIComponent(job.recruiter.industry ?? "")}&website=${encodeURIComponent(job.recruiter.website ?? "")}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hover:text-indigo-600 hover:underline transition-colors"
+                    >
+                      {companyName}
+                    </Link>
+                  ) : companyName;
+                })()}
                 {job.category && <span className="text-slate-400"> · {job.category}</span>}
               </p>
             </div>
