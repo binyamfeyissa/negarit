@@ -4,11 +4,11 @@ import { useEffect, useState, use } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Search, ChevronDown, ExternalLink, Loader, ClipboardList } from "lucide-react";
+import { MoreHorizontal, Search, ChevronDown, ExternalLink, Loader } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/auth/auth-provider";
-import type { Job, AppStatus, InterviewType, McqsResult } from "@/lib/api/types";
+import type { Job, AppStatus, InterviewType } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/types";
 import { fileUrl } from "@/lib/config";
 import { ToastContainer, Toast } from "@/components/ui/toast";
@@ -74,8 +74,6 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
   const [feedbackForm, setFeedbackForm] = useState({ score: 3, feedback: "" });
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
-  const [mcqs, setMcqs] = useState<McqsResult | null>(null);
-  const [mcqsLoading, setMcqsLoading] = useState(false);
   const [noteModal, setNoteModal] = useState<{ type: "move" | "bulk"; status: AppStatus; appIds: string[] } | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
@@ -207,19 +205,6 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
     }
   }
 
-  async function generateMcqs() {
-    setMcqs(null);
-    setMcqsLoading(true);
-    try {
-      const result = await api.jobs.mcqs(id);
-      setMcqs(result);
-      addToast("MCQs generated", "success");
-    } catch (e) {
-      addToast(e instanceof ApiError ? e.message : "Failed to generate MCQs.", "error");
-    } finally {
-      setMcqsLoading(false);
-    }
-  }
 
   const toggleSelect = (appId: string) => {
     const newSet = new Set(selected);
@@ -274,68 +259,6 @@ export default function JobApplicationsPage({ params }: { params: Promise<{ id: 
 
       {error ? <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3">{error}</div> : null}
 
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void generateMcqs()}
-          disabled={mcqsLoading}
-          className="flex items-center gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-        >
-          <ClipboardList size={14} />
-          {mcqsLoading ? "Generating…" : "Generate Screening MCQs"}
-        </Button>
-      </div>
-
-      {mcqs ? (
-        <Card className="border-indigo-100 rounded-2xl shadow-sm bg-white">
-          <div className="p-4 border-b border-indigo-50 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-indigo-900 flex items-center gap-2"><ClipboardList size={14} /> Screening MCQs for {mcqs.jobTitle}</h3>
-            <button onClick={() => setMcqs(null)} className="text-xs text-slate-400 hover:text-slate-700">Dismiss</button>
-          </div>
-          <div className="p-4 space-y-4">
-            {mcqs.questions.map((q, i) => {
-              // options may be a string[] or a {A:"..",B:".."}  object
-              const optEntries: [string, string][] = Array.isArray(q.options)
-                ? q.options.map((o, idx) => [String.fromCharCode(65 + idx), o])
-                : q.options && typeof q.options === "object"
-                  ? Object.entries(q.options as Record<string, string>)
-                  : [];
-              return (
-                <div key={i} className="rounded-xl border border-indigo-50 bg-indigo-50/40 p-4 space-y-3">
-                  <p className="text-sm font-semibold text-slate-900">{i + 1}. {q.question}</p>
-                  {optEntries.length > 0 && (
-                    <ul className="space-y-1.5">
-                      {optEntries.map(([key, text]) => {
-                        const isAnswer = q.answer === text || q.answer === key;
-                        return (
-                          <li
-                            key={key}
-                            className={`text-xs px-3 py-2 rounded-lg flex items-start gap-2 ${
-                              isAnswer
-                                ? "bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200"
-                                : "bg-white text-slate-600 border border-slate-100"
-                            }`}
-                          >
-                            <span className="font-bold shrink-0">{key}.</span>
-                            <span>{text}</span>
-                            {isAnswer && <span className="ml-auto shrink-0 text-emerald-600">✓</span>}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  {q.answer && (
-                    <p className="text-xs text-emerald-700 font-medium">
-                      ✓ Answer: <span className="font-semibold">{q.answer}</span>
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      ) : null}
 
       <Card className="border-gray-100 shadow-sm rounded-xl overflow-hidden">
         <div className="p-4 border-b border-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
